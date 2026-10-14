@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_glass.dart';
@@ -55,9 +56,9 @@ class LoginView extends GetView<AuthController> {
                       children: [
                         // App Logo icon
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -67,7 +68,19 @@ class LoginView extends GetView<AuthController> {
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.eco_rounded, color: Colors.white, size: 28),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(26),
+                            child: Image.asset(
+                              AppAssets.appLogo,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => Container(
+                                color: AppColors.primary,
+                                child: const Icon(Icons.eco_rounded, color: Colors.white, size: 28),
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 14),
 

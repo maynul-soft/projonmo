@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -69,18 +70,27 @@ class ProfileView extends GetView<ProfileController> {
           children: [
             Row(
               children: [
-                // Del Monte Shield Badge
+                // Shield Badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.eco_rounded, color: AppColors.primary, size: 18),
-                      SizedBox(width: 4),
-                      Text(
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.asset(
+                          AppAssets.appLogo,
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) => const Icon(Icons.eco_rounded, color: AppColors.primary, size: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
                         AppStrings.appName,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,

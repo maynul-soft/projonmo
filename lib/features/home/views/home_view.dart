@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_glass.dart';
@@ -118,13 +119,22 @@ class HomeView extends GetView<HomeController> {
       titleSpacing: 16,
       title: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              AppAssets.appLogo,
+              width: 30,
+              height: 30,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
+              ),
             ),
-            child: const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 8),
           const Expanded(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../controllers/splash_controller.dart';
@@ -24,7 +25,6 @@ class SplashView extends GetView<SplashController> {
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
@@ -34,11 +34,17 @@ class SplashView extends GetView<SplashController> {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.eco_rounded,
-                      color: Colors.white,
-                      size: 52,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Image.asset(
+                      AppAssets.appLogo,
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.primary,
+                        child: const Icon(Icons.eco_rounded, color: Colors.white, size: 52),
+                      ),
                     ),
                   ),
                 ),
