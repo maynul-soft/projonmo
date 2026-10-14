@@ -1,0 +1,201 @@
+Registration Page:
+
+- mobile number (send OTP button and use on same screen)
+- otp
+- paw
+- refer code (managed with url, by default admin admin id for referal)
+
+
+Login page:
+
+- Mobile Number
+- Password
+- number CAPTCHA 
+
+Home Page:
+
+App Bar/Header: (Managed with app)
+
+1. Banner (Image, title)
+2. Announcement: a single line text (as like marque text)
+count hobe. Dohra jak team member 20 Jon hole vip 2 hobe koto team member hole kono lave a jabe 3. 10 app download link admin custom setup korte parbe.
+4. Invitation link (https://example.com/register/123456)
+5. Lucky Gift banner: 
+{
+Name: Crazy Monday (as title),
+Details: Lucky gift win up to 100000, (as subtitle)
+Timing: end date time;
+Redirctd page link: product page link (admin tar create kora j kono product select kore dibe and click korle otar oi product details page a nibe)
+}
+
+6. Video link: https://..... (Admin will upload video and any)
+7. Announcement banner (just ekta image) eta set kora thakle Home Screen a gele e eta dialogue akare show kore 
+
+
+Product Page:
+
+1. Product catagory (admin product category create korbe then sei catagory er under a product create korbe withou category product create korte parbe na)
+2. Product list: {
+product card info (
+ i. image
+ ii. Name
+ iii. Kon level er lok kine parbe (i. e. Level 1 and above, level 2 & above)
+ iv. Points (product kine j point pabe eta tokay convert korte parbe convert rate admin set korbe)
+ v. contact day (ei product kindle koto din projanto income hobe)
+ vi. Every day income: 12.33
+ vii. Total earning koto hobe; 1231.00
+ Viii. Product Price
+)
+}
+
+Product detail page: 
+
+1. Product image,
+2. Product Discription
+3. Product details (
+ a. Product name
+ b. Product price 
+ c. Day income
+ d. Contact days
+ e. Daily income
+ F. Total income
+ g. Point
+ h. Purchase restrictions (e product ebar koto gulo kinte parbe, ekta contact sesh hole abar        
+ kinte parbe)
+ i. Team comission
+)
+4. Join now button link (wi)
+
+
+
+Profile view:
+1. Mobile number
+2. User id
+3. Level (vip 1,2 or anything)
+4. Total recharge ever
+5. Total balance
+6. Total earning
+8. Total withdraw
+10. Today income
+11. Today loss (logically loss nai)
+12. Total loss (logially loss nai)
+
+
+
+My product view:
+1. Income today
+2. Total income
+3. Purchesed product list (click to details)
+
+
+Funding details view: 
+1. Transection history
+
+Bank Account view:
+1. Account list
+
+note: User withdraw korar janno multiple payment method create and update korte parbe bkash nagod number;
+
+Password change view:
+ 
+New password:
+
+Telegram Chanel button: 
+Note: admin telegram Chanel link set kore dibe click korle telegram a niye jabe for contact
+
+
+Sign out api:
+
+
+Post view: 
+
+1. Post list with pagination 
+
+ Note: admin post create korbe and post er title optional thakbe, multiple image upload korte 
+ pabe single post a 
+
+Withdraw view: 
+
+1. Method list
+2. Wallet balance
+
+
+Api for withdraw
+
+Note: user tar created method theke j knno ekta selec korbe ami method id and amount Pathao tarpor admin er kase request withdraw request joma hobe.
+
+
+Deposit view:
+1. Admin created payment method list.
+
+Note: ami amount payment number and transection id Pathao
+
+
+
+Tema management view: 
+
+1. Total team member (by group a, b c).
+2. Commission per stage.
+3. Total team income
+4. Total recharge of team
+5. today new member count by stage (abc)
+6. Yesterday new member count by stage ()
+7. Last month recharge amount.
+8. This month recharge amount.
+9. Valid member list and invalid member list 
+(
+A level (count) {member list with his max priced product} note: count mane total koto Jon member der number max product ta name
+B level (count) {member list with his max priced product}
+A level (count) {member list with his max priced product}
+)
+
+
+10. Day wise income list from team member i. e. (1-10-25 (a-1000,b-1300,c-233)erokom list akare last 20 days er.
+
+
+
+
+
+jegulo bad thaklo.
+
+ Home view--
+done a. home view te marque text er api (eta single line text announement)
+c. download link er janno database e kono option nai.
+e. product a "available_to" field dorker nai jotokhon admin delte na korbe totkhon thakbe
+Done 2. vai profile view er janno j api disen kius e mathc hosse na
+    NB: egulo login er sathe o load hobe.
+    {
+    mobile number,
+    user id,
+    vip level,
+    recharge wallet,
+    balance wallet,
+    total earnings,
+    total withdraw,
+    team income,
+    today income,
+    yesterday earning,
+    points,
+    telegram channel link
+    }
+
+Done: h. buy with balance api not not working.
+done g. recharge api te proof url bad jabe.
+done h. customer withdraw method get hosse eta te admin er payment method ashtese
+i. withdraw hosse na cause insufficiant balance dekhasse kintu user er total earnings 10000
+j. customer tar product theke j daily income receive korbe tar api nai add korte hobe
+h. telegram api er link nai eta database a kono table o nai
+
+
+
+
+
+
+//banner and lucky gift er sathe link er option ta bad diyan
+
+
+
+
+
+
+
