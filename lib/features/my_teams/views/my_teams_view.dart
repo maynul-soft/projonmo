@@ -140,11 +140,11 @@ class MyTeamsView extends GetView<TeamController> {
               flex: 5,
               child: Column(
                 children: [
-                  _buildLevelPill('A', s.countA),
+                  _buildLevelPill('A', s.countA, controller.formatRate(controller.rateA.value)),
                   const SizedBox(height: 8),
-                  _buildLevelPill('B', s.countB),
+                  _buildLevelPill('B', s.countB, controller.formatRate(controller.rateB.value)),
                   const SizedBox(height: 8),
-                  _buildLevelPill('C', s.countC),
+                  _buildLevelPill('C', s.countC, controller.formatRate(controller.rateC.value)),
                 ],
               ),
             ),
@@ -162,11 +162,11 @@ class MyTeamsView extends GetView<TeamController> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
                   ),
                   const SizedBox(height: 6),
-                  Text('Stage A: ${controller.formatRate(controller.rateA.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text('Level A: ${controller.formatRate(controller.rateA.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text('Stage B: ${controller.formatRate(controller.rateB.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text('Level B: ${controller.formatRate(controller.rateB.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text('Stage C: ${controller.formatRate(controller.rateC.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text('Level C: ${controller.formatRate(controller.rateC.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
             ),
@@ -176,7 +176,7 @@ class MyTeamsView extends GetView<TeamController> {
     });
   }
 
-  Widget _buildLevelPill(String level, int count) {
+  Widget _buildLevelPill(String level, int count, [String? rate]) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
@@ -186,14 +186,14 @@ class MyTeamsView extends GetView<TeamController> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              level,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+              rate != null && rate.isNotEmpty ? '$level-$rate' : level,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10.5),
             ),
           ),
           const SizedBox(width: 4),

@@ -11,10 +11,11 @@ class TeamController extends GetxController {
 
   final teamMembers = <TeamMemberModel>[].obs;
 
-  // Dynamic commission rates for Stage A, B, C
+  // Dynamic commission rates for Stage A, B, C (defaults match calculator settings)
   final rateA = 10.0.obs;
   final rateB = 5.0.obs;
   final rateC = 2.0.obs;
+  final isCommissionSettingsLoaded = false.obs;
 
   String formatRate(double rate) {
     if (rate == rate.toInt()) {
@@ -30,17 +31,26 @@ class TeamController extends GetxController {
     fetchTeamSummary();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    fetchCommissionSettings();
+    fetchTeamSummary();
+  }
+
   Future<void> fetchCommissionSettings() async {
     try {
       final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
       if (response.data != null && response.data['success'] == true) {
         final data = response.data['data'] ?? {};
-        final stageA = (data['A'] ?? data['teamStages']?['A'] ?? data['level1'] as num?)?.toDouble();
-        final stageB = (data['B'] ?? data['teamStages']?['B'] ?? data['level2'] as num?)?.toDouble();
-        final stageC = (data['C'] ?? data['teamStages']?['C'] ?? data['level3'] as num?)?.toDouble();
+        // Prioritize level1, level2, level3 matching CalculatorController
+        final stageA = (data['level1'] ?? data['A'] ?? data['teamStages']?['A'] as num?)?.toDouble();
+        final stageB = (data['level2'] ?? data['B'] ?? data['teamStages']?['B'] as num?)?.toDouble();
+        final stageC = (data['level3'] ?? data['C'] ?? data['teamStages']?['C'] as num?)?.toDouble();
         if (stageA != null) rateA.value = stageA;
         if (stageB != null) rateB.value = stageB;
         if (stageC != null) rateC.value = stageC;
+        isCommissionSettingsLoaded.value = true;
       }
     } catch (e) {
       debugPrint('[TeamController] Error fetching commission settings: $e');
@@ -60,17 +70,19 @@ class TeamController extends GetxController {
           // Parse overall stats
           teamStats.value = TeamStatsModel.fromJson(data);
 
-          // Parse dynamic commission rates from commissionPerStage if available
-          final cps = data['commissionPerStage'];
-          if (cps is List) {
-            for (final item in cps) {
-              if (item is Map) {
-                final stage = item['stage']?.toString();
-                final rate = (item['ratePercent'] as num?)?.toDouble();
-                if (rate != null) {
-                  if (stage == 'A') rateA.value = rate;
-                  if (stage == 'B') rateB.value = rate;
-                  if (stage == 'C') rateC.value = rate;
+          // Parse dynamic commission rates from commissionPerStage if calculator settings were not loaded
+          if (!isCommissionSettingsLoaded.value) {
+            final cps = data['commissionPerStage'];
+            if (cps is List) {
+              for (final item in cps) {
+                if (item is Map) {
+                  final stage = item['stage']?.toString();
+                  final rate = (item['ratePercent'] as num?)?.toDouble();
+                  if (rate != null) {
+                    if (stage == 'A') rateA.value = rate;
+                    if (stage == 'B') rateB.value = rate;
+                    if (stage == 'C') rateC.value = rate;
+                  }
                 }
               }
             }
