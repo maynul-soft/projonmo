@@ -346,13 +346,61 @@ class BankAccountView extends GetView<WalletController> {
                   prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.primary),
                 ),
               ),
+              const SizedBox(height: 12),
+              // OTP Field
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: controller.addAccountOtpController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      decoration: const InputDecoration(
+                        labelText: 'OTP Code',
+                        hintText: '6-digit OTP',
+                        prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.primary),
+                        counterText: '',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: Obx(() {
+                      final isSending = controller.isSendingAddAccountOtp.value;
+                      return SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: isSending ? null : () => controller.sendAddAccountOtp(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.surfaceMuted,
+                            foregroundColor: AppColors.primaryDark,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: isSending
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('Send OTP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   final number = accountNumController.text.trim();
                   final holder = holderNameController.text.trim();
+                  final otp = controller.addAccountOtpController.text.trim();
                   if (number.isEmpty || holder.isEmpty) {
                     Get.snackbar('Missing Info', 'Please enter account number and holder name.');
+                    return;
+                  }
+                  if (otp.length < 6) {
+                    Get.snackbar('Invalid OTP', 'Please enter a valid 6-digit OTP code.');
                     return;
                   }
                   final newCard = UserBankCardModel(
@@ -363,7 +411,7 @@ class BankAccountView extends GetView<WalletController> {
                     accountHolderName: holder,
                     isDefault: controller.userBankCards.isEmpty,
                   );
-                  controller.addUserBankCard(newCard);
+                  controller.addUserBankCard(newCard, otp);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

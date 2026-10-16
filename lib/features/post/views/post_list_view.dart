@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
 import '../../../routes/app_routes.dart';
@@ -191,7 +192,7 @@ class PostListView extends GetView<PostController> {
           child: AspectRatio(
             aspectRatio: 16 / 9,
             child: Image.network(
-              featuredImage,
+              getWebSafeImageUrl(featuredImage),
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => Container(
                 color: AppColors.primaryLight,
@@ -222,7 +223,7 @@ class PostListView extends GetView<PostController> {
                           fit: StackFit.expand,
                           children: [
                             Image.network(
-                              smallImages[idx],
+                              getWebSafeImageUrl(smallImages[idx]),
                               fit: BoxFit.cover,
                               errorBuilder: (_, _, _) => Container(
                                 color: AppColors.surfaceMuted,

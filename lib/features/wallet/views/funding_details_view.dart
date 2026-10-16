@@ -266,13 +266,16 @@ class FundingDetailsView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  tx.accountOrTrx ?? tx.date,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
-                ),
-                const SizedBox(height: 2),
+                if (tx.accountOrTrx != null && tx.accountOrTrx!.isNotEmpty && tx.accountOrTrx != tx.date)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      tx.accountOrTrx!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                    ),
+                  ),
                 Text(
                   tx.date,
                   style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted),
@@ -297,15 +300,15 @@ class FundingDetailsView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: _getStatusColor(tx.status).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   tx.status,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF10B981),
+                    color: _getStatusColor(tx.status),
                   ),
                 ),
               ),
@@ -314,6 +317,22 @@ class FundingDetailsView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+      case 'failed':
+      case 'cancelled':
+        return const Color(0xFFEF4444);
+      case 'approved':
+      case 'success':
+      case 'completed':
+      default:
+        return const Color(0xFF10B981);
+    }
   }
 
   IconData _getIconForType(String type) {
@@ -333,3 +352,4 @@ class FundingDetailsView extends StatelessWidget {
     }
   }
 }
+

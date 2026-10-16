@@ -11,10 +11,40 @@ class TeamController extends GetxController {
 
   final teamMembers = <TeamMemberModel>[].obs;
 
+  // Dynamic commission rates for Stage A, B, C
+  final rateA = 10.0.obs;
+  final rateB = 5.0.obs;
+  final rateC = 2.0.obs;
+
+  String formatRate(double rate) {
+    if (rate == rate.toInt()) {
+      return '${rate.toInt()}%';
+    }
+    return '${rate.toStringAsFixed(1)}%';
+  }
+
   @override
   void onInit() {
     super.onInit();
+    fetchCommissionSettings();
     fetchTeamSummary();
+  }
+
+  Future<void> fetchCommissionSettings() async {
+    try {
+      final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
+      if (response.data != null && response.data['success'] == true) {
+        final data = response.data['data'] ?? {};
+        final stageA = (data['A'] ?? data['teamStages']?['A'] ?? data['level1'] as num?)?.toDouble();
+        final stageB = (data['B'] ?? data['teamStages']?['B'] ?? data['level2'] as num?)?.toDouble();
+        final stageC = (data['C'] ?? data['teamStages']?['C'] ?? data['level3'] as num?)?.toDouble();
+        if (stageA != null) rateA.value = stageA;
+        if (stageB != null) rateB.value = stageB;
+        if (stageC != null) rateC.value = stageC;
+      }
+    } catch (e) {
+      debugPrint('[TeamController] Error fetching commission settings: $e');
+    }
   }
 
   Future<void> fetchTeamSummary() async {
@@ -29,6 +59,22 @@ class TeamController extends GetxController {
           
           // Parse overall stats
           teamStats.value = TeamStatsModel.fromJson(data);
+
+          // Parse dynamic commission rates from commissionPerStage if available
+          final cps = data['commissionPerStage'];
+          if (cps is List) {
+            for (final item in cps) {
+              if (item is Map) {
+                final stage = item['stage']?.toString();
+                final rate = (item['ratePercent'] as num?)?.toDouble();
+                if (rate != null) {
+                  if (stage == 'A') rateA.value = rate;
+                  if (stage == 'B') rateB.value = rate;
+                  if (stage == 'C') rateC.value = rate;
+                }
+              }
+            }
+          }
           
           // Parse members
           final List<TeamMemberModel> allMembers = [];

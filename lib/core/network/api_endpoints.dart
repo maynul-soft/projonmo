@@ -11,6 +11,7 @@ class ApiEndpoints {
   static const String localBaseUrl = 'http://localhost:8001/api/v1';
 
   /// Android Emulator local backend base URL
+  // static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8001/api/v1';
   static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8001/api/v1';
 
   /// Production backend base URL
@@ -61,6 +62,7 @@ class ApiEndpoints {
   static const String publicCategories = '/public/categories';
   static const String publicProducts = '/public/products';
   static String publicProductDetail(String id) => '/public/products/$id';
+  static const String publicCalculatorSettings = '/public/calculator-settings';
 
   // ===========================================================================
   // 3. CUSTOMER AUTH API (No Bearer token - Maintenance-aware 503)
@@ -94,13 +96,22 @@ class ApiEndpoints {
   static const String customerWithdrawalMethods = '/customer/withdrawal-methods';
   static String customerDeleteWithdrawalMethod(String id) => '/customer/withdrawal-methods/$id';
   static const String customerWithdrawals = '/customer/withdrawals';
+  static const String customerWithdrawalSendOtp = '/customer/withdrawals/send-otp';
 
   // Team & Income
   static const String customerTeam = '/customer/team';
   static const String customerIncome = '/customer/income';
 
+  // Salary & VIP Levels
+  static const String customerSalaryWeekly = '/customer/salary/weekly';
+  static const String customerSalaryMonthly = '/customer/salary/monthly';
+  static const String customerSalaryAnnual = '/customer/salary/annual';
+  static const String customerSalaryClaim = '/customer/salary/claim';
+  static const String customerVipLevels = '/customer/vip/levels';
+
   // Points & Rewards
   static const String customerPoints = '/customer/points';
+  static const String customerPointsConvert = '/customer/points/convert';
   static const String customerPointsRedeem = '/customer/points/redeem';
 
   // Uploads

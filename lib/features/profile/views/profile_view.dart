@@ -343,6 +343,9 @@ class ProfileView extends GetView<ProfileController> {
                   '${data.points} Pts',
                   const Color(0xFFEA580C),
                   Icons.stars_rounded,
+                  onTap: () => Get.toNamed(AppRoutes.pointsConvert),
+                  subtitle: 'Click to convert',
+                  subtitleColor: const Color(0xFFEA580C),
                 ),
               ),
             ],
@@ -352,7 +355,7 @@ class ProfileView extends GetView<ProfileController> {
     });
   }
 
-  Widget _buildMetricCard(String label, String value, Color accentColor, IconData icon, {VoidCallback? onTap}) {
+  Widget _buildMetricCard(String label, String value, Color accentColor, IconData icon, {VoidCallback? onTap, String? subtitle, Color? subtitleColor}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -410,6 +413,21 @@ class ProfileView extends GetView<ProfileController> {
               ),
             );
           }),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: subtitleColor ?? AppColors.textMuted,
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 14), // Maintain same height for all cards without subtitle
+          ],
         ],
       ),
     ),

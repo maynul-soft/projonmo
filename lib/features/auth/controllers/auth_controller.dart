@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/network/network.dart';
@@ -9,8 +10,9 @@ import '../models/auth_response_model.dart';
 import '../models/user_model.dart';
 
 class AuthController extends GetxController {
-  final phoneController = TextEditingController(text: '1609157849');
-  final passwordController = TextEditingController(text: '123456');
+  // Removed default credentials so it doesn't show automatically
+  final phoneController = TextEditingController();
+  final passwordController = TextEditingController();
   final captchaController = TextEditingController();
   final inviteCodeController = TextEditingController();
   final smsCodeController = TextEditingController();

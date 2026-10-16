@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/network/network.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_network_image/app_network_image.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../models/announcement_popup_model.dart';
@@ -225,25 +227,27 @@ class HomeController extends GetxController {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: Image.network(
-                        popup.imageUrl,
+                      child: AppNetworkImage(
+                        imageUrl: popup.imageUrl.trim(),
                         width: double.infinity,
                         height: 220,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 200,
-                            color: Colors.grey.shade100,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          debugPrint('[AnnouncementDialog] Image failed to load: $error');
-                          return const SizedBox.shrink();
-                        },
+                        errorWidget: Container(
+                          height: 220,
+                          color: Colors.grey.shade200,
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image_outlined, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text(
+                                'Image could not be loaded.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     Positioned(
@@ -391,7 +395,7 @@ class HomeController extends GetxController {
         Get.toNamed(AppRoutes.rule);
         break;
       case 'download':
-        Get.toNamed(AppRoutes.downloadApp);
+        launchAppDownload();
         break;
       case 'invitation':
         Get.toNamed(AppRoutes.invitation);
@@ -399,6 +403,156 @@ class HomeController extends GetxController {
       default:
         break;
     }
+  }
+
+  void launchAppDownload() async {
+    bool isCancelled = false;
+
+    // Show Loading Dialog
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                height: 40,
+                width: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Preparing Download...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please wait while we fetch the latest app version.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    isCancelled = true;
+                    Get.back(); // Close loading dialog
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    AppStrings.cancel,
+                    style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    try {
+      // Get the download URL from the API
+      final response = await ApiClient.instance.get('/public/app-download/file');
+
+      // Close loading dialog if it's still open
+      if (Get.isDialogOpen == true && !isCancelled) {
+        Get.back();
+      }
+
+      if (isCancelled) return;
+
+      if (response.data != null && response.data is Map) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+
+        if (resMap['success'] == true && resMap['data'] != null) {
+          final dataMap = Map<String, dynamic>.from(resMap['data'] as Map);
+          final downloadUrl = dataMap['url']?.toString() ?? '';
+
+          if (downloadUrl.isNotEmpty) {
+            final Uri url = Uri.parse(downloadUrl);
+            
+            Get.snackbar(
+              'Download Started',
+              'Downloading Projonmo APK...',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: const Color(0xFF0284C7),
+              colorText: Colors.white,
+            );
+
+            if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+              _showDownloadErrorDialog('Could not launch the download link in your browser.');
+            }
+          } else {
+             _showDownloadErrorDialog('Download link is empty or currently unavailable.');
+          }
+        } else {
+          // Backend returned success: false
+          final msg = resMap['message']?.toString() ?? 'The download is currently unavailable. Please try again later.';
+          _showDownloadErrorDialog(msg);
+        }
+      } else {
+        _showDownloadErrorDialog('Failed to connect to the download server.');
+      }
+    } catch (e) {
+      if (Get.isDialogOpen == true && !isCancelled) {
+        Get.back();
+      }
+      if (isCancelled) return;
+
+      debugPrint('[HomeController] Error launching app download: $e');
+      String errorMsg = 'An unexpected error occurred while preparing the download.';
+      if (e is ApiException) {
+        errorMsg = e.message;
+      }
+      _showDownloadErrorDialog(errorMsg);
+    }
+  }
+
+  void _showDownloadErrorDialog(String message) {
+    if (Get.isDialogOpen == true) Get.back();
+    Get.defaultDialog(
+      title: 'Download Failed',
+      titleStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.accentRed),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      radius: 16,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline_rounded, color: AppColors.accentRed, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+          ),
+        ],
+      ),
+      confirm: ElevatedButton(
+        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+        onPressed: () => Get.back(),
+        child: const Text(AppStrings.close, style: TextStyle(color: Colors.white)),
+      ),
+    );
   }
 
   void showOnlineModal() {

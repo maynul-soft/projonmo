@@ -95,9 +95,6 @@ class MyProductsController extends GetxController {
 
   String formatCountdown(PurchasedProductModel p) {
     if (p.isExpired) return 'Expired';
-    if (!p.canReceive && p.lastClaimedAt == null && p.isClaimed) {
-      return AppStrings.alreadyReceived;
-    }
     final remaining = p.remainingTime;
     if (remaining == Duration.zero) return AppStrings.receiveBtn;
     final hours = remaining.inHours.toString().padLeft(2, '0');
@@ -117,11 +114,19 @@ class MyProductsController extends GetxController {
     }
 
     if (!product.canReceive) {
-      Get.snackbar(
-        'Notice',
-        'You have already received today\'s income for this product.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (product.remainingTime != Duration.zero) {
+        Get.snackbar(
+          'Notice',
+          'You must wait 24 hours between claims. Check the countdown.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'Notice',
+          'You have already received today\'s income for this product.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
       return;
     }
 

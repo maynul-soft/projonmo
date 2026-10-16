@@ -4,6 +4,7 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_glass.dart';
+import '../../../core/widgets/app_network_image/app_network_image.dart';
 import '../../../core/widgets/app_shimmer.dart';
 import '../../../core/widgets/marquee_text.dart';
 import '../../../core/widgets/video_player/app_video_player.dart';
@@ -277,10 +278,10 @@ class HomeView extends GetView<HomeController> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          banner.imageUrl,
+                        AppNetworkImage(
+                          imageUrl: banner.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
+                          errorWidget: Container(
                             decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
                             child: const Center(
                               child: Icon(Icons.shopping_bag_rounded, size: 48, color: Colors.white54),
@@ -429,9 +430,9 @@ class HomeView extends GetView<HomeController> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
-          mainAxisSpacing: 12,
+          mainAxisSpacing: 16,
           crossAxisSpacing: 8,
-          childAspectRatio: 0.78,
+          childAspectRatio: 0.9, // Adjust ratio for better fitting
         ),
         itemCount: actions.length,
         itemBuilder: (ctx, idx) {
@@ -439,30 +440,29 @@ class HomeView extends GetView<HomeController> {
           final color = item['color'] as Color;
           return InkWell(
             onTap: () => controller.onQuickActionTap(item['id'] as String),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center, // Center align vertically
               children: [
                 Container(
-                  padding: const EdgeInsets.all(9),
+                  padding: const EdgeInsets.all(14), // Bigger background
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16), // Softer corners
                   ),
-                  child: Icon(item['icon'] as IconData, size: 22, color: color),
+                  child: Icon(item['icon'] as IconData, size: 26, color: color), // Bigger icon
                 ),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: Text(
-                    item['title'] as String,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  item['title'] as String,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    height: 1.2, // Tighter line height
                   ),
                 ),
               ],
@@ -497,10 +497,10 @@ class HomeView extends GetView<HomeController> {
               // Background Image or Fallback Gradient
               Positioned.fill(
                 child: bannerUrl.isNotEmpty
-                    ? Image.network(
-                        bannerUrl,
+                    ? AppNetworkImage(
+                        imageUrl: bannerUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        errorWidget: Container(
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [Color(0xFF854D0E), Color(0xFFB45309), Color(0xFFD97706)],
@@ -747,12 +747,12 @@ class HomeView extends GetView<HomeController> {
                                 end: Alignment.bottomRight,
                               ),
                             ),
-                            child: Image.network(
-                              controller.promotionalVideo.value?.thumbnailUrl.isNotEmpty == true
+                            child: AppNetworkImage(
+                              imageUrl: controller.promotionalVideo.value?.thumbnailUrl.isNotEmpty == true
                                   ? controller.promotionalVideo.value!.thumbnailUrl
                                   : 'https://elements-resized.envatousercontent.com/elements-cover-images/3636fe3b-f647-44d7-a5bf-e1f7c73c5d57?w=433&cf_fit=scale-down&q=85&format=auto&s=46417af98699675c7088cef0dd693b0d1a5d66aa5ab8f497fa120271c233a6a6',
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Center(
+                              errorWidget: const Center(
                                 child: Icon(Icons.nature_people_rounded, size: 60, color: Colors.white30),
                               ),
                             ),

@@ -216,19 +216,99 @@ class ProductController extends GetxController {
       if (resData is Map && resData['success'] == true && resData['data'] != null) {
         final data = Map<String, dynamic>.from(resData['data']);
         
+        // Extract points from response
+        final int pointsAwarded = (data['pointsAwarded'] as num?)?.toInt() ?? 0;
+        final int pointsBalance = (data['pointsBalance'] as num?)?.toInt() ?? profileController.walletData.value.points + pointsAwarded;
+
         // Deduct balance from profile locally for instant UI update
         profileController.deductFunds(product.price, fromRechargeWallet: selectedWallet.value == 'recharge');
+        
+        // Update points in profile
+        final curWallet = profileController.walletData.value;
+        profileController.setWalletData(curWallet.copyWith(points: pointsBalance));
 
         // Add the newly purchased product to the list
         myProductsController.addProduct(PurchasedProductModel.fromJson(data));
 
         Get.back(); // close bottomsheet
-        Get.snackbar(
-          AppStrings.success, 
-          resData['message']?.toString() ?? AppStrings.purchaseSuccess, 
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF10B981),
-          colorText: Colors.white,
+        
+        // Show Success Dialog
+        Get.dialog(
+          Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 50),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Purchase Successful!',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    resData['message']?.toString() ?? 'You have successfully purchased ${product.name}.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                  if (pointsAwarded > 0) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.stars_rounded, color: Colors.amber, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            '+$pointsAwarded Points Earned!',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'New Point Balance: $pointsBalance',
+                      style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        Get.back(); // close dialog
+                        // optionally redirect to My Products if wanted
+                        // Get.toNamed(AppRoutes.myProducts); 
+                      },
+                      child: const Text('Great', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          barrierDismissible: false,
         );
       } else {
         throw ApiException(message: resData['message']?.toString() ?? 'Purchase failed');

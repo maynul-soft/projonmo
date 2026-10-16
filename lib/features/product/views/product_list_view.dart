@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
 import '../../../routes/app_routes.dart';
@@ -157,7 +158,7 @@ class ProductListView extends GetView<ProductController> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
-                      product.imageUrl,
+                      getWebSafeImageUrl(product.imageUrl),
                       width: 64,
                       height: 64,
                       fit: BoxFit.cover,

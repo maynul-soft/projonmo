@@ -26,4 +26,6 @@ class AppRoutes {
   static const String rule = '/rule';
   static const String downloadApp = '/download-app';
   static const String invitation = '/invitation';
+  static const String withdrawOtp = '/withdraw-otp';
+  static const String pointsConvert = '/points-convert';
 }

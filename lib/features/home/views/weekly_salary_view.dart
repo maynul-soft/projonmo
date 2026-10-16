@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/constants/app_assets.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_glass.dart';
-import '../../../core/widgets/app_shimmer.dart';
-import '../controllers/salary_controller.dart';
+import '../controllers/vip_salary_controller.dart';
+import '../models/vip_level_model.dart';
+import '../widgets/salary_status_card.dart';
 
 class WeeklySalaryView extends StatelessWidget {
   const WeeklySalaryView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(SalaryController());
+    final controller = Get.put(VipSalaryController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.fetchSalaryDetails('weekly');
+      controller.fetchVipLevels();
+    });
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -21,302 +26,183 @@ class WeeklySalaryView extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
-              SizedBox(width: 2),
-              Text('Back', style: TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
           onPressed: () => Get.back(),
         ),
-        leadingWidth: 80,
         title: const Text(
           'Weekly Salary',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
-          ),
+          style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          Image.asset(
-            AppAssets.scaffoldBackground,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (_, _, _) => Container(color: const Color(0xFFF0FDF4)),
+      body: Obx(() {
+        final isLoadingLevels = controller.isLoading.value;
+        final levels = controller.vipLevels.toList();
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              controller.fetchSalaryDetails('weekly'),
+              controller.fetchVipLevels(),
+            ]);
+          },
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            children: [
+              // Top Salary Status & Claim Card
+              SalaryStatusCard(
+                salary: controller.weeklySalary.value,
+                isLoading: controller.isWeeklyLoading.value,
+                controller: controller,
+                type: 'weekly',
+              ),
+
+              // Section Title
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12, top: 4),
+                child: Text(
+                  'VIP Levels & Weekly Salary',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+
+              // VIP Levels List
+              if (isLoadingLevels && levels.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                )
+              else
+                ...levels.map((level) => _buildSalaryCard(level)),
+            ],
           ),
-          Container(color: Colors.black.withValues(alpha: 0.04)),
-          Obx(() {
-            if (controller.isWeeklyLoading.value) {
-              return const GenericListShimmerView();
-            }
+        );
+      }),
+    );
+  }
 
-            final data = controller.weeklySalary.value;
-            if (data == null) {
-              return const Center(child: Text('No data available'));
-            }
+  Widget _buildSalaryCard(VipLevelModel level) {
+    final isLocked = !level.isUnlocked;
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: level.isCurrent
+              ? AppColors.primary
+              : isLocked
+                  ? AppColors.border
+                  : AppColors.primary.withValues(alpha: 0.3),
+          width: level.isCurrent ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: level.isCurrent
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
                 children: [
-                  // Top Card: Total weekly wages + Receive salary button
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: isLocked ? AppColors.surfaceMuted : AppColors.primaryLight,
+                      shape: BoxShape.circle,
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Total weekly wages',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              '৳${data.amount.toInt()}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: data.isEligible 
-                                ? () => controller.claimSalary('weekly')
-                                : () {
-                                    Get.snackbar(
-                                      'Not Eligible',
-                                      'You need ${data.remainingTeam} more active team members to claim this salary.',
-                                      snackPosition: SnackPosition.BOTTOM,
-                                      backgroundColor: Colors.white,
-                                      colorText: Colors.black87,
-                                    );
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: data.isEligible ? const Color(0xFF10B981) : const Color(0xFF9CA3AF),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Receive salary',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Icon(
+                      isLocked ? Icons.lock_outline_rounded : Icons.star_rounded,
+                      color: isLocked ? AppColors.textMuted : AppColors.primaryDark,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Salary Standard Section
-                  const Text(
-                    'Salary Standard',
+                  const SizedBox(width: 10),
+                  Text(
+                    level.name,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryLight,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.people_alt_outlined, color: AppColors.primary, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    data.title,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    data.formula,
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(height: 1, color: Color(0xFFE5E7EB)),
-                        ),
-                        // Requirements & Progress
-                        const Text(
-                          'Requirements & Progress',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
-                        ),
-                        const SizedBox(height: 12),
-                        
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Required Team:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            Text('${data.minTeam} Members', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Current Team:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            Text('${data.currentTeam} Members', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: data.progressPercent / 100,
-                            minHeight: 6,
-                            backgroundColor: const Color(0xFFE5E7EB),
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${data.progressPercent.toInt()}% Completed',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Rules & Terms Section
-                  const Text(
-                    'Rules & Terms',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildRuleItem('1', 'Salary is calculated based on active team members.'),
-                        const SizedBox(height: 12),
-                        _buildRuleItem('2', 'Distribution cycle: ${data.cycle}'),
-                        const SizedBox(height: 12),
-                        _buildRuleItem('3', 'Next distribution: ${data.nextDistributionDate}'),
-                        const SizedBox(height: 12),
-                        _buildRuleItem('4', 'If conditions are met, the "Receive salary" button will be enabled.'),
-                      ],
+                      color: isLocked ? AppColors.textSecondary : AppColors.primaryDark,
                     ),
                   ),
                 ],
               ),
-            );
-          }),
+              Text(
+                '৳${level.weeklySalary.toStringAsFixed(0)} / Week',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 12),
+
+          // Status Badges (NO claim button here!)
+          if (level.isCurrent)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle_rounded, size: 15, color: AppColors.primary),
+                  SizedBox(width: 6),
+                  Text(
+                    'Current Tier Active',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                  ),
+                ],
+              ),
+            )
+          else if (isLocked)
+            Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 16, color: Colors.orange),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Need ${level.remainingToUnlock} more members to unlock (Required: ${level.requiredTeam})',
+                    style: const TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, size: 15, color: Colors.green),
+                const SizedBox(width: 6),
+                Text(
+                  'Unlocked (${level.requiredTeam} members reached)',
+                  style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRuleItem(String number, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF3F4F6),
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            number,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

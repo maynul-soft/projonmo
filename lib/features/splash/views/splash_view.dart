@@ -41,9 +41,9 @@ class SplashView extends GetView<SplashController> {
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         color: AppColors.primary,
-                        child: const Icon(Icons.eco_rounded, color: Colors.white, size: 52),
+                        child: const Icon(Icons.devices_other_rounded, color: Colors.white, size: 50),
                       ),
                     ),
                   ),
@@ -73,7 +73,7 @@ class SplashView extends GetView<SplashController> {
                     ),
                   ),
                   child: const Text(
-                    'Smart Agro & Green Investment',
+                    'Next-Gen Electronics & Smart Tech',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
 import '../../../routes/app_routes.dart';
@@ -186,7 +187,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               child: Stack(
                 children: [
                   Image.network(
-                    product.imageUrl,
+                    getWebSafeImageUrl(product.imageUrl),
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,

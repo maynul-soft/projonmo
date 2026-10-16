@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../controllers/post_controller.dart';
 import '../models/post_model.dart';
@@ -62,7 +63,7 @@ class PostDetailView extends GetView<PostController> {
                       fit: StackFit.expand,
                       children: [
                         Image.network(
-                          imgUrl,
+                          getWebSafeImageUrl(imgUrl),
                           fit: BoxFit.cover, // Same aspect ratio and fill
                           errorBuilder: (_, _, _) => Container(
                             color: AppColors.primaryLight,

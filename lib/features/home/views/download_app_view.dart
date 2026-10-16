@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
+import '../controllers/home_controller.dart';
 
 class DownloadAppView extends StatefulWidget {
   const DownloadAppView({super.key});
@@ -140,15 +141,7 @@ class _DownloadAppViewState extends State<DownloadAppView> {
                       SizedBox(
                         height: 36,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Get.snackbar(
-                              'Download Started',
-                              'Downloading Projonmo APK v1.0.3 (24.5 MB)...',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: const Color(0xFF0284C7),
-                              colorText: Colors.white,
-                            );
-                          },
+                          onPressed: () => Get.find<HomeController>().launchAppDownload(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0284C7), // Blue installation button matching Frame 48
                             foregroundColor: Colors.white,

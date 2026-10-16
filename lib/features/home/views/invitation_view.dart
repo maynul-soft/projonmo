@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -144,7 +145,7 @@ class _InvitationViewState extends State<InvitationView> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${Uri.encodeComponent(referralUrl)}',
+                            getWebSafeImageUrl('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${Uri.encodeComponent(referralUrl)}'),
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) => CustomPaint(
                               painter: _QrFallbackPainter(),

@@ -41,7 +41,6 @@ class PurchasedProductModel {
   /// Check if 24 hours have passed since last claim and not currently claimed
   bool get canReceive {
     if (isExpired) return false;
-    if (isClaimed) return false;
     if (lastClaimedAt == null) return true;
     return remainingTime == Duration.zero;
   }
@@ -58,14 +57,24 @@ class PurchasedProductModel {
   factory PurchasedProductModel.fromJson(Map<String, dynamic> json) {
     final statusStr = json['status']?.toString() ?? 'ACTIVE';
 
-    final lastClaim = _parseDateTime(
-      json['lastClaimedAt'] ??
-          json['last_claimed_at'] ??
-          json['lastClaimed'] ??
-          json['last_claimed'] ??
-          json['lastClaimAt'] ??
-          json['last_claim_at'],
-    );
+    // Parse 'lastClaimDate' and 'lastClaimTime' or default to 'lastClaimedAt'
+    DateTime? lastClaim;
+    if (json['lastClaimDate'] != null && json['lastClaimTime'] != null) {
+      final dateStr = json['lastClaimDate'].toString().split('T').first;
+      final timeStr = json['lastClaimTime'].toString();
+      lastClaim = DateTime.tryParse('${dateStr}T$timeStr');
+    }
+
+    if (lastClaim == null) {
+      lastClaim = _parseDateTime(
+        json['lastClaimedAt'] ??
+            json['last_claimed_at'] ??
+            json['lastClaimed'] ??
+            json['last_claimed'] ??
+            json['lastClaimAt'] ??
+            json['last_claim_at'],
+      );
+    }
 
     // Explicit flags from backend API (supports isClaimedToday, canClaimToday, claimedToday, etc.)
     bool claimed = json['isClaimedToday'] == true ||
@@ -76,9 +85,15 @@ class PurchasedProductModel {
         json['can_claim_today'] == false ||
         json['isClaimed'] == true ||
         json['is_claimed'] == true ||
+        json['isClaim'] == true ||
         json['claimed'] == true;
 
-    if (!claimed && lastClaim != null) {
+    // Use backend's `is24HoursPassed` flag directly if available, otherwise check difference
+    bool is24HoursPassed = json['is24HoursPassed'] == true || json['is_24_hours_passed'] == true;
+    
+    if (json.containsKey('is24HoursPassed') || json.containsKey('is_24_hours_passed')) {
+       claimed = !is24HoursPassed; // If 24 hours passed, it's not claimed for the *current* cycle.
+    } else if (!claimed && lastClaim != null) {
       final diff = DateTime.now().difference(lastClaim);
       if (diff.inHours < 24) {
         claimed = true;

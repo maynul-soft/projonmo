@@ -37,6 +37,8 @@ import '../features/wallet/views/bank_account_view.dart';
 import '../features/wallet/views/funding_details_view.dart';
 import '../features/wallet/views/recharge_view.dart';
 import '../features/wallet/views/withdraw_view.dart';
+import '../features/wallet/views/withdraw_otp_view.dart';
+import '../features/profile/views/points_convert_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -166,6 +168,17 @@ class AppPages {
         Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
         Get.lazyPut<WalletController>(() => WalletController(), fenix: true);
       }),
+    ),
+    GetPage(
+      name: AppRoutes.withdrawOtp,
+      page: () => const WithdrawOtpView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<WalletController>(() => WalletController(), fenix: true);
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.pointsConvert,
+      page: () => const PointsConvertView(),
     ),
     GetPage(
       name: AppRoutes.notifications,

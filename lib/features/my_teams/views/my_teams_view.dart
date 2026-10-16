@@ -152,21 +152,21 @@ class MyTeamsView extends GetView<TeamController> {
             Container(width: 1, height: 100, color: AppColors.border),
             const SizedBox(width: 14),
             // Right: Commission Rules
-            const Expanded(
+            Expanded(
               flex: 5,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     AppStrings.commissionRules,
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
                   ),
-                  SizedBox(height: 6),
-                  Text('Stage A: 10%', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  SizedBox(height: 4),
-                  Text('Stage B: 5%', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  SizedBox(height: 4),
-                  Text('Stage C: 2%', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 6),
+                  Text('Stage A: ${controller.formatRate(controller.rateA.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 4),
+                  Text('Stage B: ${controller.formatRate(controller.rateB.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 4),
+                  Text('Stage C: ${controller.formatRate(controller.rateC.value)}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
             ),
@@ -350,13 +350,17 @@ class MyTeamsView extends GetView<TeamController> {
   Widget _buildLevelTabs(BuildContext context) {
     return Obx(() {
       final s = controller.teamStats.value;
+      final rateAStr = controller.formatRate(controller.rateA.value);
+      final rateBStr = controller.formatRate(controller.rateB.value);
+      final rateCStr = controller.formatRate(controller.rateC.value);
+
       return Row(
         children: [
-          _buildPillTab('A-10% (${s.countA})', 'A'),
+          _buildPillTab('A-$rateAStr (${s.countA})', 'A'),
           const SizedBox(width: 8),
-          _buildPillTab('B-5% (${s.countB})', 'B'),
+          _buildPillTab('B-$rateBStr (${s.countB})', 'B'),
           const SizedBox(width: 8),
-          _buildPillTab('C-2% (${s.countC})', 'C'),
+          _buildPillTab('C-$rateCStr (${s.countC})', 'C'),
         ],
       );
     });

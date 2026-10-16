@@ -69,11 +69,11 @@ class CalculatorView extends GetView<CalculatorController> {
                   // B, C, D Team Inputs
                   Row(
                     children: [
-                      _buildTeamInput('B', controller.bController),
+                      _buildTeamInput('Level 1', controller.l1Controller),
                       const SizedBox(width: 10),
-                      _buildTeamInput('C', controller.cController),
+                      _buildTeamInput('Level 2', controller.l2Controller),
                       const SizedBox(width: 10),
-                      _buildTeamInput('D', controller.dController),
+                      _buildTeamInput('Level 3', controller.l3Controller),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -181,26 +181,26 @@ class CalculatorView extends GetView<CalculatorController> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Level B, C, D formula rows
+                    // Level 1, 2, 3 formula rows
                     _buildFormulaLine(
-                      'B',
-                      '${res.productDailyIncome} * 10% * ${res.countB}',
-                      CurrencyFormatter.format(res.bEarnings),
+                      'Level 1',
+                      '${res.productPrice} * ${controller.level1Rate.value}% * ${res.countL1}',
+                      CurrencyFormatter.format(res.level1Earnings),
                     ),
                     _buildFormulaLine(
-                      'C',
-                      '${res.productDailyIncome} * 5% * ${res.countC}',
-                      CurrencyFormatter.format(res.cEarnings),
+                      'Level 2',
+                      '${res.productPrice} * ${controller.level2Rate.value}% * ${res.countL2}',
+                      CurrencyFormatter.format(res.level2Earnings),
                     ),
                     _buildFormulaLine(
-                      'D',
-                      '${res.productDailyIncome} * 2% * ${res.countD}',
-                      CurrencyFormatter.format(res.dEarnings),
+                      'Level 3',
+                      '${res.productPrice} * ${controller.level3Rate.value}% * ${res.countL3}',
+                      CurrencyFormatter.format(res.level3Earnings),
                     ),
                     const Divider(height: 16),
                     _buildTotalLine(
-                      'Daily Total:',
-                      '${CurrencyFormatter.format(res.bEarnings, showSymbol: false)} + ${CurrencyFormatter.format(res.cEarnings, showSymbol: false)} + ${CurrencyFormatter.format(res.dEarnings, showSymbol: false)} = ',
+                      'Daily Total (incl. Product):',
+                      '${CurrencyFormatter.format(res.level1Earnings, showSymbol: false)} + ${CurrencyFormatter.format(res.level2Earnings, showSymbol: false)} + ${CurrencyFormatter.format(res.level3Earnings, showSymbol: false)} + ${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} = ',
                       CurrencyFormatter.format(res.dailyTotal),
                     ),
                     const SizedBox(height: 16),
