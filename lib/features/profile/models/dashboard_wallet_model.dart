@@ -1,6 +1,8 @@
 class DashboardWalletModel {
   final double rechargeWallet;
+  final double totalDeposite;
   final double balanceWallet;
+  final double availableEarnings;
   final double totalEarnings;
   final double totalWithdrawals;
   final double teamIncome;
@@ -12,8 +14,10 @@ class DashboardWalletModel {
   final String telegramChannelUrl;
 
   DashboardWalletModel({
+    this.totalDeposite = 0.00,
     this.rechargeWallet = 0.0,
     this.balanceWallet = 0.0,
+    this.availableEarnings = 0.0,
     this.totalEarnings = 0.0,
     this.totalWithdrawals = 0.0,
     this.teamIncome = 0.0,
@@ -26,17 +30,37 @@ class DashboardWalletModel {
   });
 
   factory DashboardWalletModel.fromJson(Map<String, dynamic> json) {
+    final depositRaw = json['totalDeposit'] ?? json['total_deposit'];
+    final depositVal = depositRaw != null ? (depositRaw as num).toDouble() : null;
+    final rechargeRaw = json['recharge_wallet'] ?? json['rechargeWallet'];
+    final rechargeVal = rechargeRaw != null ? (rechargeRaw as num).toDouble() : 0.0;
+    final effectiveRecharge = depositVal ?? rechargeVal;
+
+    final availableEarningsRaw = json['availableEarnings'] ??
+        json['available_earnings'] ??
+        json['balanceWallet'] ??
+        json['balance_wallet'] ??
+        json['balance'];
+    final availableEarningsVal = availableEarningsRaw != null
+        ? (availableEarningsRaw as num).toDouble()
+        : 0.0;
+
+    final earningsRaw = json['totalEarnings'] ?? json['total_earnings'];
+    final earningsVal = earningsRaw != null ? (earningsRaw as num).toDouble() : 0.0;
+
     return DashboardWalletModel(
-      rechargeWallet: (json['recharge_wallet'] ?? json['rechargeWallet'] as num?)?.toDouble() ?? 0.0,
-      balanceWallet: (json['balance'] ?? json['balance_wallet'] ?? json['balanceWallet'] as num?)?.toDouble() ?? 0.0,
-      totalEarnings: (json['total_earnings'] ?? json['totalEarnings'] as num?)?.toDouble() ?? 0.0,
-      totalWithdrawals: (json['total_withdraw'] ?? json['totalWithdraw'] ?? json['total_withdrawals'] ?? json['totalWithdrawals'] as num?)?.toDouble() ?? 0.0,
-      teamIncome: (json['team_income'] ?? json['teamIncome'] as num?)?.toDouble() ?? 0.0,
-      incomeToday: (json['today_income'] ?? json['todayIncome'] ?? json['income_today'] ?? json['incomeToday'] as num?)?.toDouble() ?? 0.0,
-      todaysLoss: (json['todays_loss'] ?? json['todaysLoss'] as num?)?.toDouble() ?? 0.0,
-      totalLoss: (json['total_loss'] ?? json['totalLoss'] as num?)?.toDouble() ?? 0.0,
-      yesterdaysEarnings: (json['yesterday_earning'] ?? json['yesterdayEarning'] ?? json['yesterdays_earnings'] ?? json['yesterdaysEarnings'] ?? json['yesterday_income'] ?? json['yesterdayIncome'] as num?)?.toDouble() ?? 0.0,
-      points: (json['points'] ?? json['pointsBalance'] ?? json['points_balance'] as num?)?.toInt() ?? 0,
+      rechargeWallet: effectiveRecharge,
+      totalDeposite: effectiveRecharge,
+      balanceWallet: availableEarningsVal,
+      availableEarnings: availableEarningsVal,
+      totalEarnings: earningsVal,
+      totalWithdrawals: ((json['total_withdraw'] ?? json['totalWithdraw'] ?? json['total_withdrawals'] ?? json['totalWithdrawals']) as num?)?.toDouble() ?? 0.0,
+      teamIncome: ((json['team_income'] ?? json['teamIncome']) as num?)?.toDouble() ?? 0.0,
+      incomeToday: ((json['today_income'] ?? json['todayIncome'] ?? json['income_today'] ?? json['incomeToday']) as num?)?.toDouble() ?? 0.0,
+      todaysLoss: ((json['todays_loss'] ?? json['todaysLoss']) as num?)?.toDouble() ?? 0.0,
+      totalLoss: ((json['total_loss'] ?? json['totalLoss']) as num?)?.toDouble() ?? 0.0,
+      yesterdaysEarnings: ((json['yesterday_earning'] ?? json['yesterdayEarning'] ?? json['yesterdays_earnings'] ?? json['yesterdaysEarnings'] ?? json['yesterday_income'] ?? json['yesterdayIncome']) as num?)?.toDouble() ?? 0.0,
+      points: ((json['points'] ?? json['pointsBalance'] ?? json['points_balance']) as num?)?.toInt() ?? 0,
       telegramChannelUrl: json['telegramLink']?.toString() ??
           json['telegram_link']?.toString() ??
           json['telegramChannelLink']?.toString() ??
@@ -51,6 +75,7 @@ class DashboardWalletModel {
     return {
       'recharge_wallet': rechargeWallet,
       'balance_wallet': balanceWallet,
+      'available_earnings': availableEarnings,
       'total_earnings': totalEarnings,
       'total_withdrawals': totalWithdrawals,
       'team_income': teamIncome,
@@ -66,6 +91,7 @@ class DashboardWalletModel {
   DashboardWalletModel copyWith({
     double? rechargeWallet,
     double? balanceWallet,
+    double? availableEarnings,
     double? totalEarnings,
     double? totalWithdrawals,
     double? teamIncome,
@@ -79,6 +105,7 @@ class DashboardWalletModel {
     return DashboardWalletModel(
       rechargeWallet: rechargeWallet ?? this.rechargeWallet,
       balanceWallet: balanceWallet ?? this.balanceWallet,
+      availableEarnings: availableEarnings ?? this.availableEarnings,
       totalEarnings: totalEarnings ?? this.totalEarnings,
       totalWithdrawals: totalWithdrawals ?? this.totalWithdrawals,
       teamIncome: teamIncome ?? this.teamIncome,

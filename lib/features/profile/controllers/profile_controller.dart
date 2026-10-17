@@ -26,6 +26,12 @@ class ProfileController extends GetxController {
     });
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    fetchCustomerProfile();
+  }
+
   Future<void> _loadWalletData() async {
     try {
       final cachedUser = await TokenStorage.instance.getUser();
@@ -58,6 +64,8 @@ class ProfileController extends GetxController {
       }
     } catch (e) {
       debugPrint('[ProfileController] Error fetching profile /me: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 

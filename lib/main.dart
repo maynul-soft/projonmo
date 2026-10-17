@@ -6,10 +6,12 @@ import 'core/constants/app_assets.dart';
 import 'core/constants/app_strings.dart';
 import 'core/network/network.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/http_override_helper.dart';
 import 'routes/app_pages.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  initHttpOverrides();
   GoogleFonts.config.allowRuntimeFetching = true;
   await TokenStorage.instance.init();
   SystemChrome.setSystemUIOverlayStyle(

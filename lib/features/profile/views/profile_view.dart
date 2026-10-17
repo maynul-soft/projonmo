@@ -16,30 +16,42 @@ class ProfileView extends GetView<ProfileController> {
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
 
+    // Always fetch latest profile data when ProfileView is rendered/entered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().fetchCustomerProfile();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // User Profile Banner Card
-              _buildUserHeaderCard(context, authController),
-              const SizedBox(height: 14),
+        child: RefreshIndicator(
+          onRefresh: controller.fetchCustomerProfile,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // User Profile Banner Card
+                _buildUserHeaderCard(context, authController),
+                const SizedBox(height: 14),
 
-              // Action Buttons: Recharge & Withdraws
-              _buildTopActionButtons(context),
-              const SizedBox(height: 14),
+                // Action Buttons: Recharge & Withdraws
+                _buildTopActionButtons(context),
+                const SizedBox(height: 14),
 
-              // Professional Dashboard Stats Grid
-              _buildDashboardStatsGrid(context),
-              const SizedBox(height: 16),
+                // Professional Dashboard Stats Grid
+                _buildDashboardStatsGrid(context),
+                const SizedBox(height: 16),
 
-              // Services Grid (Directly displays the service items without the service/svip toggle tab)
-              _buildServicesGrid(context),
-              const SizedBox(height: 24),
-            ],
+                // Services Grid (Directly displays the service items without the service/svip toggle tab)
+                _buildServicesGrid(context),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
@@ -222,7 +234,10 @@ class ProfileView extends GetView<ProfileController> {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => Get.toNamed(AppRoutes.recharge),
+            onPressed: () async {
+              await Get.toNamed(AppRoutes.recharge);
+              controller.fetchCustomerProfile();
+            },
             icon: const Icon(Icons.account_balance_wallet_rounded, size: 18, color: Colors.white),
             label: const Text(AppStrings.rechargeBtn),
             style: ElevatedButton.styleFrom(
@@ -236,7 +251,10 @@ class ProfileView extends GetView<ProfileController> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () => Get.toNamed(AppRoutes.withdraw),
+            onPressed: () async {
+              await Get.toNamed(AppRoutes.withdraw);
+              controller.fetchCustomerProfile();
+            },
             icon: const Icon(Icons.payments_rounded, size: 18, color: Colors.white),
             label: const Text(AppStrings.withdrawBtn),
             style: ElevatedButton.styleFrom(
@@ -264,7 +282,10 @@ class ProfileView extends GetView<ProfileController> {
                   CurrencyFormatter.format(data.rechargeWallet),
                   const Color(0xFF10B981),
                   Icons.account_balance_wallet_outlined,
-                  onTap: () => Get.toNamed(AppRoutes.recharge),
+                  onTap: () async {
+                    await Get.toNamed(AppRoutes.recharge);
+                    controller.fetchCustomerProfile();
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -274,7 +295,10 @@ class ProfileView extends GetView<ProfileController> {
                   CurrencyFormatter.format(data.balanceWallet),
                   const Color(0xFF059669),
                   Icons.savings_outlined,
-                  onTap: () => Get.toNamed(AppRoutes.fundingDetails),
+                  onTap: () async {
+                    await Get.toNamed(AppRoutes.fundingDetails);
+                    controller.fetchCustomerProfile();
+                  },
                 ),
               ),
             ],
@@ -288,7 +312,10 @@ class ProfileView extends GetView<ProfileController> {
                   CurrencyFormatter.format(data.totalEarnings),
                   const Color(0xFF0D9488),
                   Icons.trending_up_rounded,
-                  onTap: () => Get.toNamed(AppRoutes.fundingDetails),
+                  onTap: () async {
+                    await Get.toNamed(AppRoutes.fundingDetails);
+                    controller.fetchCustomerProfile();
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -298,7 +325,10 @@ class ProfileView extends GetView<ProfileController> {
                   CurrencyFormatter.format(data.totalWithdrawals),
                   const Color(0xFF2563EB),
                   Icons.outbox_rounded,
-                  onTap: () => Get.toNamed(AppRoutes.withdraw),
+                  onTap: () async {
+                    await Get.toNamed(AppRoutes.withdraw);
+                    controller.fetchCustomerProfile();
+                  },
                 ),
               ),
             ],

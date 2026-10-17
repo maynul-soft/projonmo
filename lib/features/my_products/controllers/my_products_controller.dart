@@ -81,6 +81,9 @@ class MyProductsController extends GetxController {
   }
 
   double get totalEarningsReceived {
+    if (Get.isRegistered<ProfileController>()) {
+      return Get.find<ProfileController>().walletData.value.totalEarnings;
+    }
     return purchasedProducts.fold(0.0, (sum, p) => sum + p.alreadyReceived);
   }
 

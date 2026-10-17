@@ -135,6 +135,7 @@ class LoginView extends GetView<AuthController> {
                               child: TextField(
                                 controller: controller.phoneController,
                                 keyboardType: TextInputType.phone,
+                                textInputAction: TextInputAction.next,
                                 decoration: const InputDecoration(
                                   hintText: AppStrings.phonePlaceholder,
                                 ),
@@ -148,6 +149,12 @@ class LoginView extends GetView<AuthController> {
                         Obx(() => TextField(
                           controller: controller.passwordController,
                           obscureText: !controller.isPasswordVisible.value,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) {
+                            if (!controller.isLoading.value) {
+                              controller.login();
+                            }
+                          },
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                             hintText: AppStrings.passwordPlaceholder,

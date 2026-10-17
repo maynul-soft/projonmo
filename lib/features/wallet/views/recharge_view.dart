@@ -97,7 +97,7 @@ class RechargeView extends GetView<WalletController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Current Recharge Wallet',
+                'Current Wallet Balance',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 13,
@@ -108,7 +108,7 @@ class RechargeView extends GetView<WalletController> {
               Obx(
                 () => Text(
                   CurrencyFormatter.format(
-                    profileCtrl.walletData.value.rechargeWallet,
+                    profileCtrl.walletData.value.balanceWallet,
                   ),
                   style: const TextStyle(
                     color: Colors.white,

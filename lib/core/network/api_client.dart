@@ -46,10 +46,19 @@ class ApiClient extends GetxService {
     _dio.interceptors.add(
       QueuedInterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Auto-set Authorization header from SharedPreferences cache if token exists
-          final token = await tokenStorage.getToken();
-          if (token != null && token.isNotEmpty && !options.headers.containsKey('Authorization')) {
-            options.headers['Authorization'] = 'Bearer $token';
+          // Do not send Bearer token to public or auth endpoints (e.g. login, register, send-otp)
+          final path = options.path;
+          final isAuthEndpoint = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/send-otp') ||
+              path.contains('/auth/verify-otp') ||
+              path.startsWith('/public/');
+
+          if (!isAuthEndpoint) {
+            final token = await tokenStorage.getToken();
+            if (token != null && token.isNotEmpty && !options.headers.containsKey('Authorization')) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
           return handler.next(options);
         },

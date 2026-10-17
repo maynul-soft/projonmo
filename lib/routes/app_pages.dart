@@ -114,6 +114,7 @@ class AppPages {
       name: AppRoutes.myProducts,
       page: () => const MyProductsView(),
       binding: BindingsBuilder(() {
+        Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
         Get.lazyPut<MyProductsController>(() => MyProductsController(), fenix: true);
       }),
     ),

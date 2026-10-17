@@ -184,17 +184,17 @@ class CalculatorView extends GetView<CalculatorController> {
                     // Level 1, 2, 3 formula rows
                     _buildFormulaLine(
                       'Level 1',
-                      '${res.productPrice} * ${controller.level1Rate.value}% * ${res.countL1}',
+                      '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level1Rate.value)} * ${res.countL1}',
                       CurrencyFormatter.format(res.level1Earnings),
                     ),
                     _buildFormulaLine(
                       'Level 2',
-                      '${res.productPrice} * ${controller.level2Rate.value}% * ${res.countL2}',
+                      '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level2Rate.value)} * ${res.countL2}',
                       CurrencyFormatter.format(res.level2Earnings),
                     ),
                     _buildFormulaLine(
                       'Level 3',
-                      '${res.productPrice} * ${controller.level3Rate.value}% * ${res.countL3}',
+                      '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level3Rate.value)} * ${res.countL3}',
                       CurrencyFormatter.format(res.level3Earnings),
                     ),
                     const Divider(height: 16),

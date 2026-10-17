@@ -8,6 +8,7 @@ import '../../../core/network/network.dart';
 import '../../../routes/app_routes.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_model.dart';
+import '../../profile/controllers/profile_controller.dart';
 
 class AuthController extends GetxController {
   // Removed default credentials so it doesn't show automatically
@@ -102,24 +103,69 @@ class AuthController extends GetxController {
 
   /// Normalize phone to 11 digits Bangladesh format (e.g. 01712345678)
   String getNormalizedPhone() {
-    String phone = phoneController.text.trim();
-    phone = phone.replaceAll(RegExp(r'\D'), '');
+    String raw = phoneController.text.trim();
+
+    // If developer/user pasted full JSON or key-value like {"mobile":"01609157849", "password":"123456"}
+    if (raw.contains('mobile') || raw.contains('phone')) {
+      try {
+        final cleanJson = raw.startsWith('{') ? raw : '{$raw}';
+        final decoded = jsonDecode(cleanJson);
+        if (decoded is Map) {
+          if (decoded['mobile'] != null || decoded['phone'] != null) {
+            raw = (decoded['mobile'] ?? decoded['phone']).toString();
+            phoneController.text = raw;
+          }
+          if (decoded['password'] != null) {
+            passwordController.text = decoded['password'].toString();
+          }
+        }
+      } catch (_) {
+        final mobileMatch = RegExp(r'mobile\D+(\d+)').firstMatch(raw);
+        if (mobileMatch != null) {
+          raw = mobileMatch.group(1)!;
+          phoneController.text = raw;
+        }
+        final passMatch = RegExp(r'password\D+([^\s,"}]+)').firstMatch(raw);
+        if (passMatch != null) {
+          passwordController.text = passMatch.group(1)!;
+        }
+      }
+    }
+
+    // Strip all non-digit characters
+    String phone = raw.replaceAll(RegExp(r'\D'), '');
+
+    // Strip BD country code prefixes: 880 or 88
+    if (phone.startsWith('880')) {
+      phone = phone.substring(3);
+    } else if (phone.startsWith('88')) {
+      phone = phone.substring(2);
+    }
+
+    // If user entered 10 digits starting with 1 (e.g. 1609157849), prepend '0'
     if (phone.length == 10 && phone.startsWith('1')) {
       phone = '0$phone';
-    } else if (phone.length > 11) {
+    }
+
+    // If longer than 11 digits, extract the last 11 digits
+    if (phone.length > 11) {
       phone = phone.substring(phone.length - 11);
     }
+
     return phone;
   }
 
   /// Send OTP to user's mobile number via API
   Future<void> sendOtp() async {
+    if (isSendingOtp.value) return;
+    Get.closeAllSnackbars();
+
     final mobile = getNormalizedPhone();
 
-    if (mobile.isEmpty || mobile.length < 11) {
+    if (mobile.isEmpty || mobile.length != 11 || !mobile.startsWith('01')) {
       Get.snackbar(
         'Invalid Mobile Number',
-        'Please enter a valid 11-digit mobile number first (e.g. 01712345678).',
+        'Please enter a valid 11-digit mobile number (e.g. 01712345678).',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
@@ -157,6 +203,7 @@ class AuthController extends GetxController {
           ? resData['message'].toString()
           : 'Verification code sent to $mobile';
 
+      Get.closeAllSnackbars();
       Get.snackbar(
         'OTP Sent Successfully',
         msg,
@@ -197,32 +244,48 @@ class AuthController extends GetxController {
 
   /// Real Customer Login (POST /customer/auth/login)
   Future<void> login() async {
+    // Prevent duplicate calls
+    if (isLoading.value) return;
+
+    // Immediately clear all existing snackbars and hide keyboard
+    Get.closeAllSnackbars();
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final mobile = getNormalizedPhone();
     final password = passwordController.text.trim();
 
-    if (mobile.isEmpty || mobile.length < 11) {
+    if (mobile.isEmpty || mobile.length != 11 || !mobile.startsWith('01')) {
       Get.snackbar(
-        'Notice',
-        'Please enter a valid 11-digit mobile number',
+        'Invalid Mobile Number',
+        'Please enter a valid 11-digit mobile number (e.g. 017XXXXXXXX)',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+        duration: const Duration(seconds: 3),
       );
       return;
     }
     if (password.isEmpty) {
       Get.snackbar(
-        'Notice',
+        'Password Required',
         'Please enter your password',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.lock_outline_rounded, color: Colors.white),
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     try {
       isLoading.value = true;
+      debugPrint('[AuthController] Attempting login: mobile="$mobile", passwordLength=${password.length}');
 
       final response = await ApiClient.instance.post(
         ApiEndpoints.customerLogin,
@@ -232,8 +295,15 @@ class AuthController extends GetxController {
         },
       );
 
-      final responseMap = (response.data is Map)
-          ? Map<String, dynamic>.from(response.data as Map)
+      dynamic resData = response.data;
+      if (resData is String) {
+        try {
+          resData = jsonDecode(resData);
+        } catch (_) {}
+      }
+
+      final responseMap = (resData is Map)
+          ? Map<String, dynamic>.from(resData as Map)
           : <String, dynamic>{};
       final authResponse = AuthResponseModel.fromJson(responseMap);
 
@@ -242,7 +312,10 @@ class AuthController extends GetxController {
 
         if (authData.accessToken.isNotEmpty) {
           await ApiClient.instance.setToken(authData.accessToken);
+        } else {
+          throw const ApiException(message: 'Login failed: No access token received from server.');
         }
+
         if (authData.refreshToken.isNotEmpty) {
           await TokenStorage.instance.saveRefreshToken(authData.refreshToken);
         }
@@ -250,12 +323,21 @@ class AuthController extends GetxController {
         currentUser.value = authData.user;
         await TokenStorage.instance.saveUser(jsonEncode(authData.user.toJson()));
 
+        // Also fetch profile immediately to populate ProfileController
+        if (Get.isRegistered<ProfileController>()) {
+          Get.find<ProfileController>().fetchCustomerProfile();
+        }
+
+        Get.closeAllSnackbars();
         Get.snackbar(
           'Login Successful',
           'Welcome back!',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF10B981),
           colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
           duration: const Duration(seconds: 2),
         );
 
@@ -270,23 +352,34 @@ class AuthController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFFEF4444),
           colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
         );
       }
     } on ApiException catch (e) {
+      debugPrint('[AuthController] Login ApiException: ${e.message} (status: ${e.statusCode})');
       Get.snackbar(
         'Login Error',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
     } catch (e) {
+      debugPrint('[AuthController] Login General Exception: $e');
       Get.snackbar(
         'Network Error',
         'Could not complete login: $e',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.wifi_off_rounded, color: Colors.white),
       );
     } finally {
       isLoading.value = false;
@@ -295,15 +388,20 @@ class AuthController extends GetxController {
 
   /// Real Customer Registration (POST /customer/auth/register)
   Future<void> register() async {
+    if (isLoading.value) return;
+
+    Get.closeAllSnackbars();
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final mobile = getNormalizedPhone();
     final password = passwordController.text.trim();
     final otp = smsCodeController.text.trim();
     final referralCode = inviteCodeController.text.trim();
 
-    if (mobile.isEmpty || mobile.length < 11) {
+    if (mobile.isEmpty || mobile.length != 11 || !mobile.startsWith('01')) {
       Get.snackbar(
         'Invalid Mobile Number',
-        'Please enter a valid 11-digit mobile number.',
+        'Please enter a valid 11-digit mobile number (e.g. 017XXXXXXXX).',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
@@ -360,8 +458,15 @@ class AuthController extends GetxController {
         data: registerPayload,
       );
 
-      final responseMap = (registerResponse.data is Map)
-          ? Map<String, dynamic>.from(registerResponse.data as Map)
+      dynamic resData = registerResponse.data;
+      if (resData is String) {
+        try {
+          resData = jsonDecode(resData);
+        } catch (_) {}
+      }
+
+      final responseMap = (resData is Map)
+          ? Map<String, dynamic>.from(resData as Map)
           : <String, dynamic>{};
       final authResponse = AuthResponseModel.fromJson(responseMap);
 
@@ -372,6 +477,8 @@ class AuthController extends GetxController {
 
         if (authData.accessToken.isNotEmpty) {
           await ApiClient.instance.setToken(authData.accessToken);
+        } else {
+          throw const ApiException(message: 'Registration failed: No access token received from server.');
         }
         if (authData.refreshToken.isNotEmpty) {
           await TokenStorage.instance.saveRefreshToken(authData.refreshToken);
@@ -381,6 +488,7 @@ class AuthController extends GetxController {
         currentUser.value = authData.user;
         await TokenStorage.instance.saveUser(jsonEncode(authData.user.toJson()));
 
+        Get.closeAllSnackbars();
         Get.snackbar(
           'Registration Successful',
           'Welcome to Projonmo! Your account has been registered.',

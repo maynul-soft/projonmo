@@ -395,6 +395,8 @@ class WalletController extends GetxController {
 
   /// Submit Withdraw
   Future<void> submitWithdraw() async {
+    if (isSubmittingWithdraw.value) return;
+
     final selectedCard = selectedWithdrawCard.value;
     if (selectedCard == null) {
       Get.snackbar('Select Account', 'Please select or add a withdrawal payment method.');
@@ -419,12 +421,12 @@ class WalletController extends GetxController {
     }
 
     final profileCtrl = Get.find<ProfileController>();
-    final currentBalance = profileCtrl.walletData.value.balanceWallet + profileCtrl.walletData.value.rechargeWallet;
+    final balanceWallet = profileCtrl.walletData.value.balanceWallet;
 
-    if (amount > currentBalance) {
+    if (amount > balanceWallet) {
       Get.snackbar(
         'Insufficient Balance',
-        'Your current wallet balance is ৳${currentBalance.toStringAsFixed(2)}.',
+        'Your wallet balance is ৳${balanceWallet.toStringAsFixed(2)}. You can withdraw a maximum of ৳${balanceWallet.toStringAsFixed(2)}.',
         backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
@@ -448,6 +450,8 @@ class WalletController extends GetxController {
   final withdrawOtpController = TextEditingController();
 
   Future<void> verifyAndSubmitWithdraw(double amount, UserBankCardModel selectedCard) async {
+    if (isSubmittingWithdraw.value) return;
+
     final otp = withdrawOtpController.text.trim();
     if (otp.length < 6) {
       Get.snackbar('Invalid OTP', 'Please enter a valid 6-digit OTP code.');
@@ -464,26 +468,21 @@ class WalletController extends GetxController {
       };
 
       await ApiClient.instance.post(ApiEndpoints.customerWithdrawals, data: payload);
-      
-      await ApiClient.instance.post(ApiEndpoints.customerWithdrawals, data: payload);
-
 
       final profileCtrl = Get.find<ProfileController>();
       
-      // Deduct from wallet & increase total withdrawals locally
-      if (profileCtrl.walletData.value.balanceWallet >= amount) {
-        profileCtrl.deductFunds(amount, fromRechargeWallet: false);
-      } else {
-        final fromBal = profileCtrl.walletData.value.balanceWallet;
-        final fromRecharge = amount - fromBal;
-        if (fromBal > 0) profileCtrl.deductFunds(fromBal, fromRechargeWallet: false);
-        if (fromRecharge > 0) profileCtrl.deductFunds(fromRecharge, fromRechargeWallet: true);
-      }
+      // Deduct from available balance / balance wallet locally
+      profileCtrl.deductFunds(amount, fromRechargeWallet: false);
 
       final cur = profileCtrl.walletData.value;
       profileCtrl.setWalletData(cur.copyWith(
+        availableEarnings: (cur.availableEarnings - amount).clamp(0.0, double.infinity),
+        balanceWallet: (cur.balanceWallet - amount).clamp(0.0, double.infinity),
         totalWithdrawals: cur.totalWithdrawals + amount,
       ));
+
+      // Re-fetch profile from API to synchronize
+      await profileCtrl.fetchCustomerProfile();
 
       final feeA = amount * (commissionRateA / 100);
       final feeB = amount * (commissionRateB / 100);

@@ -32,6 +32,11 @@ class AppNetworkImage extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
+      headers: const {
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      },
       loadingBuilder: placeholder != null
           ? (context, child, progress) => progress == null ? child : placeholder!
           : null,

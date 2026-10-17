@@ -36,7 +36,7 @@ class _InvitationViewState extends State<InvitationView> {
 
     final user = authController.currentUser.value;
     final refCode = user?.referralCode ?? user?.invitationCode ?? user?.memberId ?? '702426';
-    final referralUrl = 'https://projonmo.tech/register/$refCode';
+    final referralUrl = 'https://projonmo.tech/#/register/$refCode';
 
     return Scaffold(
       backgroundColor: Colors.transparent,

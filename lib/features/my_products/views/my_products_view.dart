@@ -6,6 +6,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_glass.dart';
 import '../../../core/widgets/app_shimmer.dart';
+import '../../profile/controllers/profile_controller.dart';
 import '../controllers/my_products_controller.dart';
 import '../models/purchased_product_model.dart';
 
@@ -16,6 +17,9 @@ class MyProductsView extends GetView<MyProductsController> {
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.refreshMyProducts();
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().fetchCustomerProfile();
+      }
     });
 
     return Scaffold(
@@ -80,6 +84,10 @@ class MyProductsView extends GetView<MyProductsController> {
   }
 
   Widget _buildSummaryHeader(BuildContext context) {
+    final profileCtrl = Get.isRegistered<ProfileController>()
+        ? Get.find<ProfileController>()
+        : Get.put(ProfileController());
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -94,13 +102,16 @@ class MyProductsView extends GetView<MyProductsController> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(child: _buildHeaderItem(AppStrings.incomeToday, CurrencyFormatter.format(controller.incomeToday))),
-          Container(width: 1, height: 40, color: Colors.white24),
-          Expanded(child: _buildHeaderItem(AppStrings.totalEarnings, CurrencyFormatter.format(controller.totalEarningsReceived))),
-        ],
-      ),
+      child: Obx(() {
+        final totalEarnings = profileCtrl.walletData.value.totalEarnings;
+        return Row(
+          children: [
+            Expanded(child: _buildHeaderItem(AppStrings.incomeToday, CurrencyFormatter.format(controller.incomeToday))),
+            Container(width: 1, height: 40, color: Colors.white24),
+            Expanded(child: _buildHeaderItem(AppStrings.totalEarnings, CurrencyFormatter.format(totalEarnings))),
+          ],
+        );
+      }),
     );
   }
 

@@ -44,9 +44,16 @@ class CalculatorController extends GetxController {
   final isLoading = true.obs;
 
   // Dynamic commission rates
-  final level1Rate = 10.0.obs;
-  final level2Rate = 5.0.obs;
-  final level3Rate = 2.0.obs;
+  final level1Rate = 7.0.obs;
+  final level2Rate = 3.0.obs;
+  final level3Rate = 1.0.obs;
+
+  String formatRate(double rate) {
+    if (rate == rate.toInt()) {
+      return '${rate.toInt()}%';
+    }
+    return '${rate.toStringAsFixed(1)}%';
+  }
 
   @override
   void onInit() {
@@ -62,9 +69,9 @@ class CalculatorController extends GetxController {
       final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
       if (response.data != null && response.data['success'] == true) {
         final data = response.data['data'] ?? {};
-        level1Rate.value = (data['level1'] as num?)?.toDouble() ?? 10.0;
-        level2Rate.value = (data['level2'] as num?)?.toDouble() ?? 5.0;
-        level3Rate.value = (data['level3'] as num?)?.toDouble() ?? 2.0;
+        level1Rate.value = (data['level1'] as num?)?.toDouble() ?? 7.0;
+        level2Rate.value = (data['level2'] as num?)?.toDouble() ?? 3.0;
+        level3Rate.value = (data['level3'] as num?)?.toDouble() ?? 1.0;
       }
     } catch (e) {
       debugPrint('[CalculatorController] Error fetching settings: $e');
@@ -87,14 +94,14 @@ class CalculatorController extends GetxController {
     final countL2 = int.tryParse(l2Controller.text.trim()) ?? 0;
     final countL3 = int.tryParse(l3Controller.text.trim()) ?? 0;
 
-    final price = product.price;
+    final dailyIncome = product.dailyIncome;
 
-    // Formula: Product Price * (Commission % / 100) * Team Count
-    final l1Earnings = price * (level1Rate.value / 100) * countL1;
-    final l2Earnings = price * (level2Rate.value / 100) * countL2;
-    final l3Earnings = price * (level3Rate.value / 100) * countL3;
+    // Formula: Product Daily Income * (Commission % / 100) * Team Count
+    final l1Earnings = dailyIncome * (level1Rate.value / 100) * countL1;
+    final l2Earnings = dailyIncome * (level2Rate.value / 100) * countL2;
+    final l3Earnings = dailyIncome * (level3Rate.value / 100) * countL3;
     
-    final dailyTotal = l1Earnings + l2Earnings + l3Earnings + product.dailyIncome;
+    final dailyTotal = l1Earnings + l2Earnings + l3Earnings + dailyIncome;
     final monthlyTotal = dailyTotal * 30;
     final contractTotal = dailyTotal * product.validityDays;
 
@@ -106,8 +113,8 @@ class CalculatorController extends GetxController {
       monthlyTotal: monthlyTotal,
       contractTotal: contractTotal,
       validityDays: product.validityDays,
-      productPrice: price,
-      productDailyIncome: product.dailyIncome,
+      productPrice: product.price,
+      productDailyIncome: dailyIncome,
       countL1: countL1,
       countL2: countL2,
       countL3: countL3,

@@ -16,6 +16,10 @@ class WithdrawView extends GetView<WalletController> {
   Widget build(BuildContext context) {
     final profileCtrl = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : Get.put(ProfileController());
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      profileCtrl.fetchCustomerProfile();
+    });
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -109,7 +113,7 @@ class WithdrawView extends GetView<WalletController> {
 
   Widget _buildBalanceCard(ProfileController profileCtrl) {
     return Obx(() {
-      final totalBalance = profileCtrl.walletData.value.balanceWallet + profileCtrl.walletData.value.rechargeWallet;
+      final balance = profileCtrl.walletData.value.balanceWallet;
 
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -146,7 +150,7 @@ class WithdrawView extends GetView<WalletController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Total Wallet Balance',
+                    'Balance Wallet',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -160,7 +164,7 @@ class WithdrawView extends GetView<WalletController> {
                           child: AppShimmer(child: ShimmerLine(width: 120, height: 22)),
                         )
                       : Text(
-                          '৳${CurrencyFormatter.format(totalBalance)}',
+                          CurrencyFormatter.format(balance),
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -362,8 +366,8 @@ class WithdrawView extends GetView<WalletController> {
               hintStyle: const TextStyle(fontSize: 13.5, color: AppColors.textMuted, fontWeight: FontWeight.normal),
               suffixIcon: TextButton(
                 onPressed: () {
-                  final totalBal = profileCtrl.walletData.value.balanceWallet + profileCtrl.walletData.value.rechargeWallet;
-                  controller.withdrawAmountController.text = totalBal.toInt().toString();
+                  final balance = profileCtrl.walletData.value.balanceWallet;
+                  controller.withdrawAmountController.text = balance.toInt().toString();
                 },
                 child: const Text('ALL', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D9488))),
               ),
@@ -375,9 +379,9 @@ class WithdrawView extends GetView<WalletController> {
           ),
           const SizedBox(height: 8),
           Obx(() {
-            final totalBal = profileCtrl.walletData.value.balanceWallet + profileCtrl.walletData.value.rechargeWallet;
+            final balance = profileCtrl.walletData.value.balanceWallet;
             return Text(
-              'Available Wallet Balance: ৳${totalBal.toStringAsFixed(2)} | Min: ৳${controller.minWithdrawAmount.toInt()} | Max: ৳${controller.maxWithdrawAmount.toInt()}',
+              'Balance Wallet: ৳${balance.toStringAsFixed(2)} | Min: ৳${controller.minWithdrawAmount.toInt()} | Max: ৳${balance.toInt()}',
               style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
             );
           }),

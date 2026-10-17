@@ -92,7 +92,7 @@ class UserModel {
       invitationCode: refCode,
       referralCode: refCode,
       sponsorId: json['sponsorId']?.toString() ?? json['sponsor_id']?.toString(),
-      balance: _parseDouble(json['balance'] ?? json['balanceWallet'] ?? json['balance_wallet']),
+      balance: _parseDouble(json['availableEarnings'] ?? json['available_earnings'] ?? json['balance'] ?? json['balanceWallet'] ?? json['balance_wallet']),
       totalDeposit: _parseDouble(json['totalDeposit'] ?? json['total_deposit']),
       totalWithdraw: _parseDouble(json['totalWithdraw'] ?? json['total_withdraw'] ?? json['totalWithdrawals'] ?? json['total_withdrawals']),
       totalEarnings: _parseDouble(json['totalEarnings'] ?? json['total_earnings']),

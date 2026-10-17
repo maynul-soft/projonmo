@@ -8,13 +8,11 @@ class MainNavController extends GetxController {
   final currentIndex = 0.obs;
 
   void changeTab(int index) {
-    if (currentIndex.value != index) {
-      currentIndex.value = index;
-      _triggerTabShimmer(index);
-    }
+    currentIndex.value = index;
+    _onTabSelected(index);
   }
 
-  void _triggerTabShimmer(int index) {
+  void _onTabSelected(int index) {
     if (index == 0 && Get.isRegistered<HomeController>()) {
       final c = Get.find<HomeController>();
       c.isLoading.value = true;
@@ -27,10 +25,10 @@ class MainNavController extends GetxController {
       final c = Get.find<PostController>();
       c.isLoading.value = true;
       Future.delayed(const Duration(seconds: 2), () => c.isLoading.value = false);
-    } else if (index == 3 && Get.isRegistered<ProfileController>()) {
-      final c = Get.find<ProfileController>();
-      c.isLoading.value = true;
-      Future.delayed(const Duration(seconds: 2), () => c.isLoading.value = false);
+    } else if (index == 3) {
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().fetchCustomerProfile();
+      }
     }
   }
 }
