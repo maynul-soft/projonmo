@@ -1,3 +1,80 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Helper to cache the initial countdown target time for newly purchased products
+/// until the first income is claimed.
+class FirstClaimCache {
+  static const String _storageKey = 'product_first_claim_targets';
+  static final Map<String, DateTime> _targets = {};
+  static bool _isLoaded = false;
+
+  static DateTime? getTarget(String productId) => _targets[productId];
+
+  /// Load all cached target unlock times from SharedPreferences
+  static Future<void> loadAll() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_storageKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final Map<String, dynamic> map = jsonDecode(jsonStr);
+        map.forEach((key, val) {
+          final dt = DateTime.tryParse(val.toString());
+          if (dt != null) {
+            _targets[key] = dt.toLocal();
+          }
+        });
+      }
+      _isLoaded = true;
+    } catch (e) {
+      debugPrint('[FirstClaimCache] Error loading targets: $e');
+    }
+  }
+
+  /// Resolve or create the target unlock time:
+  /// - If target is ALREADY cached: return the cached target! (DO NOT recalculate from waitHours)
+  /// - If target is NOT cached yet AND waitHours > 0: create target = now + waitHours, cache it and persist it!
+  static DateTime? resolveTarget(String productId, int waitHours) {
+    if (productId.isEmpty) return null;
+
+    // 1. If target is already cached in memory, return it directly!
+    if (_targets.containsKey(productId)) {
+      return _targets[productId];
+    }
+
+    // 2. If waitHours > 0, calculate new target unlock time, cache in memory, and persist
+    if (waitHours > 0) {
+      final target = DateTime.now().add(Duration(hours: waitHours));
+      _targets[productId] = target;
+      _persist();
+      return target;
+    }
+
+    return null;
+  }
+
+  /// Clear cache when product has been claimed (lastClaimedAt is no longer null)
+  static void clear(String productId) {
+    if (_targets.containsKey(productId)) {
+      _targets.remove(productId);
+      _persist();
+    }
+  }
+
+  static void _persist() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final Map<String, String> map = {};
+      _targets.forEach((key, val) {
+        map[key] = val.toIso8601String();
+      });
+      await prefs.setString(_storageKey, jsonEncode(map));
+    } catch (e) {
+      debugPrint('[FirstClaimCache] Error persisting targets: $e');
+    }
+  }
+}
+
 class PurchasedProductModel {
   final String id;
   final String productCode;
@@ -13,6 +90,8 @@ class PurchasedProductModel {
   final DateTime? lastClaimedAt;
   final bool isClaimed;
   final String status;
+  final int waitHours;
+  final DateTime? unlockAt;
 
   PurchasedProductModel({
     required this.id,
@@ -29,6 +108,8 @@ class PurchasedProductModel {
     this.lastClaimedAt,
     this.isClaimed = false,
     this.status = 'ACTIVE',
+    this.waitHours = 0,
+    this.unlockAt,
   });
 
   bool get isExpired {
@@ -38,16 +119,40 @@ class PurchasedProductModel {
     return validityDays > 0 && daysPassed >= validityDays;
   }
 
-  /// Check if 24 hours have passed since last claim and not currently claimed
+  /// Check if eligible to receive income
   bool get canReceive {
     if (isExpired) return false;
-    if (lastClaimedAt == null) return true;
+
+    // First-time purchase case (never claimed before)
+    if (lastClaimedAt == null) {
+      if (unlockAt != null) {
+        return DateTime.now().isAfter(unlockAt!);
+      }
+      if (waitHours > 0) return false;
+      return true;
+    }
+
+    // Traditional system (24h between claims)
     return remainingTime == Duration.zero;
   }
 
   /// Remaining duration until next claim
   Duration get remainingTime {
-    if (lastClaimedAt == null) return Duration.zero;
+    if (isExpired) return Duration.zero;
+
+    // First-time purchase countdown
+    if (lastClaimedAt == null) {
+      if (unlockAt != null) {
+        final remaining = unlockAt!.difference(DateTime.now());
+        return remaining.isNegative ? Duration.zero : remaining;
+      }
+      if (waitHours > 0) {
+        return Duration(hours: waitHours);
+      }
+      return Duration.zero;
+    }
+
+    // Traditional system: 24h from last claim
     final lastClaimLocal = lastClaimedAt!.toLocal();
     final nextClaimTime = lastClaimLocal.add(const Duration(hours: 24));
     final remaining = nextClaimTime.difference(DateTime.now());
@@ -76,7 +181,34 @@ class PurchasedProductModel {
       );
     }
 
-    // Explicit flags from backend API (supports isClaimedToday, canClaimToday, claimedToday, etc.)
+    final prodId = json['id']?.toString() ?? json['userProductId']?.toString() ?? '';
+    final waitH = _parseInt(
+      json['waitHours'] ??
+          json['hoursRemainingUntilFirstIncome'] ??
+          json['wait_hours'] ??
+          json['hours_remaining_until_first_income'],
+      0,
+    );
+
+    // If lastClaim is present, traditional system applies & clear any first-time cache.
+    // If lastClaim is null, resolve unlock target from cache or waitHours.
+    DateTime? firstUnlockAt;
+    if (lastClaim != null) {
+      if (prodId.isNotEmpty) {
+        FirstClaimCache.clear(prodId);
+      }
+    } else {
+      final canClaimNow = json['canClaimToday'] == true ||
+          json['can_claim_today'] == true ||
+          json['is24HoursPassed'] == true ||
+          json['is_24_hours_passed'] == true;
+
+      if (!canClaimNow && waitH > 0 && prodId.isNotEmpty) {
+        firstUnlockAt = FirstClaimCache.resolveTarget(prodId, waitH);
+      }
+    }
+
+    // Explicit flags from backend API
     bool claimed = json['isClaimedToday'] == true ||
         json['is_claimed_today'] == true ||
         json['claimedToday'] == true ||
@@ -90,9 +222,9 @@ class PurchasedProductModel {
 
     // Use backend's `is24HoursPassed` flag directly if available, otherwise check difference
     bool is24HoursPassed = json['is24HoursPassed'] == true || json['is_24_hours_passed'] == true;
-    
+
     if (json.containsKey('is24HoursPassed') || json.containsKey('is_24_hours_passed')) {
-       claimed = !is24HoursPassed; // If 24 hours passed, it's not claimed for the *current* cycle.
+      claimed = !is24HoursPassed;
     } else if (!claimed && lastClaim != null) {
       final diff = DateTime.now().difference(lastClaim);
       if (diff.inHours < 24) {
@@ -100,17 +232,24 @@ class PurchasedProductModel {
       }
     }
 
+    // If it's a first-time purchase with waitHours, it is waiting for first claim
+    if (lastClaim == null && waitH > 0) {
+      if (firstUnlockAt != null && !DateTime.now().isAfter(firstUnlockAt)) {
+        claimed = true;
+      }
+    }
+
     final dailyInc = _parseDouble(json['dailyIncome'] ?? json['daily_income']);
     final vDays = _parseInt(json['contractDays'] ?? json['validity_days'] ?? json['validityDays'], 30);
     double totalEarn = _parseDouble(json['totalReturn'] ?? json['total_earnings'] ?? json['totalEarnings']);
-    
+
     // Auto-compute total return if not explicitly returned by API
     if (totalEarn == 0.0 && dailyInc > 0 && vDays > 0) {
       totalEarn = dailyInc * vDays;
     }
 
     return PurchasedProductModel(
-      id: json['id']?.toString() ?? json['userProductId']?.toString() ?? '',
+      id: prodId,
       productCode: json['productCode']?.toString() ?? json['product_code']?.toString() ?? json['productId']?.toString() ?? 'A1',
       name: json['name']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString() ?? json['image_url']?.toString() ?? '',
@@ -127,6 +266,8 @@ class PurchasedProductModel {
       lastClaimedAt: lastClaim,
       isClaimed: claimed,
       status: statusStr,
+      waitHours: waitH,
+      unlockAt: firstUnlockAt,
     );
   }
 
@@ -173,6 +314,8 @@ class PurchasedProductModel {
       'last_claimed_at': lastClaimedAt?.toIso8601String(),
       'is_claimed': isClaimed,
       'status': status,
+      'wait_hours': waitHours,
+      'unlock_at': unlockAt?.toIso8601String(),
     };
   }
 
@@ -191,6 +334,8 @@ class PurchasedProductModel {
     DateTime? lastClaimedAt,
     bool? isClaimed,
     String? status,
+    int? waitHours,
+    DateTime? unlockAt,
   }) {
     return PurchasedProductModel(
       id: id ?? this.id,
@@ -207,6 +352,8 @@ class PurchasedProductModel {
       lastClaimedAt: lastClaimedAt ?? this.lastClaimedAt,
       isClaimed: isClaimed ?? this.isClaimed,
       status: status ?? this.status,
+      waitHours: waitHours ?? this.waitHours,
+      unlockAt: unlockAt ?? this.unlockAt,
     );
   }
 }

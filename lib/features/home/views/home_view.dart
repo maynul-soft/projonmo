@@ -362,38 +362,56 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildMarqueeAnnouncement(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.volume_up_rounded, size: 16, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Obx(() => MarqueeText(
-              text: controller.marqueeNotice.value,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryDark,
+    return GestureDetector(
+      onTap: () {
+        final popup = controller.announcementPopup.value;
+        if (popup != null) {
+          controller.showImageAnnouncementDialog(
+            imageUrl: popup.imageUrl,
+            title: popup.title,
+            description: popup.description,
+          );
+        } else {
+          controller.showImageAnnouncementDialog(
+            imageUrl: '',
+            title: 'Announcement',
+            description: controller.marqueeNotice.value,
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
               ),
-              velocity: 38.0,
-              blankSpace: 40.0,
-            )),
-          ),
-        ],
+              child: const Icon(Icons.volume_up_rounded, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Obx(() => MarqueeText(
+                text: controller.marqueeNotice.value,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryDark,
+                ),
+                velocity: 38.0,
+                blankSpace: 40.0,
+              )),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ import '../models/announcement_popup_model.dart';
 import '../models/banner_model.dart';
 import '../models/lucky_gift_model.dart';
 import '../models/video_model.dart';
+import '../widgets/announcement_image_dialog.dart';
 
 class HomeController extends GetxController {
   final currentBannerIndex = 0.obs;
@@ -206,122 +207,25 @@ class HomeController extends GetxController {
   }
 
   void _showAnnouncementDialog(AnnouncementPopupModel popup) {
+    showImageAnnouncementDialog(
+      imageUrl: popup.imageUrl,
+      title: popup.title,
+      description: popup.description,
+    );
+  }
+
+  void showImageAnnouncementDialog({
+    required String imageUrl,
+    String title = '',
+    String description = '',
+  }) {
     if (Get.isDialogOpen == true) return;
 
     Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        clipBehavior: Clip.antiAlias,
-        backgroundColor: Colors.white,
-        elevation: 10,
-        child: Container(
-          width: 320,
-          constraints: const BoxConstraints(maxHeight: 560),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Image Section with Loader
-              if (popup.imageUrl.isNotEmpty)
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: AppNetworkImage(
-                        imageUrl: popup.imageUrl.trim(),
-                        width: double.infinity,
-                        height: 220,
-                        fit: BoxFit.cover,
-                        errorWidget: Container(
-                          height: 220,
-                          color: Colors.grey.shade200,
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.broken_image_outlined, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text(
-                                'Image could not be loaded.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: GestureDetector(
-                        onTap: () => Get.back(),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close_rounded, size: 18, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-              // Title and Description Section
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (popup.title.isNotEmpty)
-                      Text(
-                        popup.title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    if (popup.title.isNotEmpty && popup.description.isNotEmpty)
-                      const SizedBox(height: 10),
-                    if (popup.description.isNotEmpty)
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            popup.description,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: () => Get.back(),
-                        child: const Text(
-                          AppStrings.close,
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      AnnouncementImageDialog(
+        imageUrl: imageUrl,
+        title: title,
+        description: description,
       ),
       barrierDismissible: true,
     );
@@ -615,7 +519,9 @@ class HomeController extends GetxController {
 
     final user = authController.currentUser.value;
     final refCode = user?.referralCode ?? user?.invitationCode ?? user?.memberId ?? '702426';
-    final referralUrl = 'https://projonmo.tech/register/$refCode';
+    final referralUrl = (user?.invitationLink != null && user!.invitationLink!.isNotEmpty)
+        ? user.invitationLink!
+        : 'https://projonmo.tech/register/$refCode';
 
     Get.defaultDialog(
       title: AppStrings.invitation,

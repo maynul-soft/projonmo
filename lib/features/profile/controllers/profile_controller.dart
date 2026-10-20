@@ -56,6 +56,10 @@ class ProfileController extends GetxController {
           // Update Wallet model
           walletData.value = DashboardWalletModel.fromJson(dataMap);
 
+          if (walletData.value.telegramChannelUrl.isNotEmpty) {
+            telegramLink.value = walletData.value.telegramChannelUrl;
+          }
+
           // Update AuthController's user model and cache it
           final userModel = UserModel.fromJson(dataMap);
           Get.find<AuthController>().setUser(userModel);

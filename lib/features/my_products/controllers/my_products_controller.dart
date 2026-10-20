@@ -32,6 +32,7 @@ class MyProductsController extends GetxController {
   Future<void> _fetchMyProducts() async {
     try {
       isLoading.value = true;
+      await FirstClaimCache.loadAll();
       final response = await ApiClient.instance.get(
         '/customer/products/mine',
       );
@@ -148,6 +149,7 @@ class MyProductsController extends GetxController {
         // Find and update the specific product locally
         final index = purchasedProducts.indexWhere((p) => p.id == product.id);
         if (index != -1) {
+          FirstClaimCache.clear(product.id);
           final updated = product.copyWith(
             alreadyReceived: product.alreadyReceived + claimedAmount,
             daysPassed: product.daysPassed + 1,

@@ -32,7 +32,10 @@ class BankAccountView extends GetView<WalletController> {
           IconButton(
             tooltip: 'Add Account',
             icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 26),
-            onPressed: () => _showAddMethodModal(context),
+            onPressed: () {
+              if (controller.isAddingBankCard.value || controller.isLoading.value) return;
+              _showAddMethodModal(context);
+            },
           ),
         ],
       ),
@@ -292,6 +295,7 @@ class BankAccountView extends GetView<WalletController> {
   }
 
   void _showAddMethodModal(BuildContext context) {
+    controller.addAccountOtpController.clear();
     final methodId = 'bkash'.obs;
     final accountNumController = TextEditingController();
     final holderNameController = TextEditingController();
@@ -390,36 +394,54 @@ class BankAccountView extends GetView<WalletController> {
                 ],
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  final number = accountNumController.text.trim();
-                  final holder = holderNameController.text.trim();
-                  final otp = controller.addAccountOtpController.text.trim();
-                  if (number.isEmpty || holder.isEmpty) {
-                    Get.snackbar('Missing Info', 'Please enter account number and holder name.');
-                    return;
-                  }
-                  if (otp.length < 6) {
-                    Get.snackbar('Invalid OTP', 'Please enter a valid 6-digit OTP code.');
-                    return;
-                  }
-                  final newCard = UserBankCardModel(
-                    id: 'card_${DateTime.now().millisecondsSinceEpoch}',
-                    methodId: methodId.value,
-                    methodName: '${methodId.value.capitalizeFirst} Personal',
-                    accountNumber: number,
-                    accountHolderName: holder,
-                    isDefault: controller.userBankCards.isEmpty,
-                  );
-                  controller.addUserBankCard(newCard, otp);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text('Save Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
+              Obx(() {
+                final isAdding = controller.isAddingBankCard.value;
+                return ElevatedButton(
+                  onPressed: isAdding
+                      ? null
+                      : () {
+                          final number = accountNumController.text.trim();
+                          final holder = holderNameController.text.trim();
+                          final otp = controller.addAccountOtpController.text.trim();
+                          if (number.isEmpty || holder.isEmpty) {
+                            Get.snackbar('Missing Info', 'Please enter account number and holder name.');
+                            return;
+                          }
+                          if (otp.length < 6) {
+                            Get.snackbar('Invalid OTP', 'Please enter a valid 6-digit OTP code.');
+                            return;
+                          }
+
+                          // Immediately dismiss bottom sheet so background list shows loading shimmer
+                          // and prevents double submissions
+                          if (Get.isBottomSheetOpen == true) {
+                            Get.back();
+                          }
+
+                          final newCard = UserBankCardModel(
+                            id: 'card_${DateTime.now().millisecondsSinceEpoch}',
+                            methodId: methodId.value,
+                            methodName: '${methodId.value.capitalizeFirst} Personal',
+                            accountNumber: number,
+                            accountHolderName: holder,
+                            isDefault: controller.userBankCards.isEmpty,
+                          );
+                          controller.addUserBankCard(newCard, otp);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isAdding
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Save Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                );
+              }),
               const SizedBox(height: 10),
             ],
           ),

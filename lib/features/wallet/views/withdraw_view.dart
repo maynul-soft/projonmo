@@ -391,88 +391,98 @@ class WithdrawView extends GetView<WalletController> {
   }
 
   Widget _buildCalculationSummaryCard(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller.withdrawAmountController,
-      builder: (context, _) {
-        final amountText = controller.withdrawAmountController.text.trim();
-        final amount = double.tryParse(amountText) ?? 0.0;
-        final feeA = amount * (controller.commissionRateA / 100);
-        final feeB = amount * (controller.commissionRateB / 100);
-        final feeC = amount * (controller.commissionRateC / 100);
-        final totalFee = feeA + feeB + feeC;
-        final finalWithdraw = amount > totalFee ? amount - totalFee : 0.0;
+    return Obx(() {
+      final rateA = controller.commissionRateA.value;
+      final rateB = controller.commissionRateB.value;
+      final rateC = controller.commissionRateC.value;
+      final totalPercent = controller.totalDeductionPercent;
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.calculate_outlined, size: 18, color: Color(0xFF0D9488)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Commission Deductions & Settlement',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const Divider(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Level A Commission (10%):', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
-                  Text(
-                    '৳${feeA.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Level B Commission (5%):', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
-                  Text(
-                    '৳${feeB.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Level C Commission (2%):', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
-                  Text(
-                    '৳${feeC.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Total Deductions (17%):', style: TextStyle(fontSize: 12.5, color: AppColors.accentRed)),
-                  Text(
-                    '- ৳${totalFee.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.accentRed),
-                  ),
-                ],
-              ),
+      return AnimatedBuilder(
+        animation: controller.withdrawAmountController,
+        builder: (context, _) {
+          final amountText = controller.withdrawAmountController.text.trim();
+          final amount = double.tryParse(amountText) ?? 0.0;
+          final feeA = amount * (rateA / 100);
+          final feeB = amount * (rateB / 100);
+          final feeC = amount * (rateC / 100);
+          final totalFee = feeA + feeB + feeC;
+          final finalWithdraw = amount > totalFee ? amount - totalFee : 0.0;
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.calculate_outlined, size: 18, color: Color(0xFF0D9488)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Commission Deductions & Settlement',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+                const Divider(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Level A Commission (${controller.formatRate(rateA)}):',
+                        style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+                    Text(
+                      '৳${feeA.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Level B Commission (${controller.formatRate(rateB)}):',
+                        style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+                    Text(
+                      '৳${feeB.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Level C Commission (${controller.formatRate(rateC)}):',
+                        style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+                    Text(
+                      '৳${feeC.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total Deductions (${controller.formatRate(totalPercent)}):',
+                        style: const TextStyle(fontSize: 12.5, color: AppColors.accentRed)),
+                    Text(
+                      '- ৳${totalFee.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: AppColors.accentRed),
+                    ),
+                  ],
+                ),
               const Divider(height: 18),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -504,7 +514,8 @@ class WithdrawView extends GetView<WalletController> {
         );
       },
     );
-  }
+  });
+}
 
   Widget _buildSubmitButton(BuildContext context) {
     return Obx(() {
@@ -531,17 +542,17 @@ class WithdrawView extends GetView<WalletController> {
   }
 
   Widget _buildWithdrawRulesCard(BuildContext context) {
-    return Container(
+    return Obx(() => Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.rule_rounded, color: Color(0xFF0D9488), size: 18),
               SizedBox(width: 8),
@@ -551,18 +562,18 @@ class WithdrawView extends GetView<WalletController> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             '1. Withdrawals are processed 7 days a week, 10:00 AM – 10:00 PM.\n'
             '2. Minimum withdrawal amount is ৳500 and maximum per request is ৳50,000.\n'
             '3. Please ensure the bKash/Nagad or bank account details are 100% correct.\n'
-            '4. A 5% platform handling and transaction fee is deducted automatically.\n'
+            '4. Total ${controller.formatRate(controller.totalDeductionPercent)} commission deduction (Level A: ${controller.formatRate(controller.commissionRateA.value)}, Level B: ${controller.formatRate(controller.commissionRateB.value)}, Level C: ${controller.formatRate(controller.commissionRateC.value)}) is applied automatically.\n'
             '5. Funds usually arrive within 10 to 60 minutes after admin approval.',
-            style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.5),
+            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.5),
           ),
         ],
       ),
-    );
+    ));
   }
 
   IconData _getCardIcon(String name) {

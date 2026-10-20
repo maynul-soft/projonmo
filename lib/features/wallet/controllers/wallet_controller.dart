@@ -59,14 +59,23 @@ class WalletController extends GetxController {
   // Shimmer loading state (2 seconds)
   final isLoading = true.obs;
 
-  // Withdrawal Rules info & Commission Tier Deductions
-  // User spec: "jekhane handeling fee ta manage hosse okhane hishab hobe a level commission b level comission and c level commission akhon 10, 5, 2 % katbe and kete niye tar final withdraw koto hobe eta dekhbe hishab ta"
+  // Withdrawal Rules info & Dynamic Commission Tier Deductions
   final minWithdrawAmount = 500.0;
   final maxWithdrawAmount = 50000.0;
-  final commissionRateA = 10.0; // 10%
-  final commissionRateB = 5.0;  // 5%
-  final commissionRateC = 2.0;  // 2%
-  double get totalDeductionPercent => commissionRateA + commissionRateB + commissionRateC; // 17%
+  final commissionRateA = 7.0.obs;
+  final commissionRateB = 2.0.obs;
+  final commissionRateC = 1.0.obs;
+  final isCommissionSettingsLoaded = false.obs;
+
+  double get totalDeductionPercent =>
+      commissionRateA.value + commissionRateB.value + commissionRateC.value;
+
+  String formatRate(double rate) {
+    if (rate == rate.toInt()) {
+      return '${rate.toInt()}%';
+    }
+    return '${rate.toStringAsFixed(1)}%';
+  }
 
   @override
   void onInit() {
@@ -74,13 +83,41 @@ class WalletController extends GetxController {
     _initData();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    fetchCommissionSettings();
+  }
+
   Future<void> _initData() async {
     isLoading.value = true;
     await Future.wait([
       fetchPaymentMethods(),
       fetchWithdrawalMethods(),
+      fetchCommissionSettings(),
     ]);
     isLoading.value = false;
+  }
+
+  Future<void> fetchCommissionSettings() async {
+    try {
+      final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
+      if (response.data != null && response.data is Map) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        if (resMap['success'] == true && resMap['data'] != null) {
+          final data = Map<String, dynamic>.from(resMap['data'] as Map);
+          final stageA = (data['level1'] ?? data['A'] ?? data['teamStages']?['A'] as num?)?.toDouble();
+          final stageB = (data['level2'] ?? data['B'] ?? data['teamStages']?['B'] as num?)?.toDouble();
+          final stageC = (data['level3'] ?? data['C'] ?? data['teamStages']?['C'] as num?)?.toDouble();
+          if (stageA != null) commissionRateA.value = stageA;
+          if (stageB != null) commissionRateB.value = stageB;
+          if (stageC != null) commissionRateC.value = stageC;
+          isCommissionSettingsLoaded.value = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('[WalletController] Error fetching commission settings: $e');
+    }
   }
 
   Future<void> fetchPaymentMethods() async {
@@ -147,6 +184,7 @@ class WalletController extends GetxController {
 
   final addAccountOtpController = TextEditingController();
   final isSendingAddAccountOtp = false.obs;
+  final isAddingBankCard = false.obs;
 
   Future<void> sendAddAccountOtp() async {
     try {
@@ -163,8 +201,17 @@ class WalletController extends GetxController {
 
   /// Add new bank/wallet account for user
   Future<void> addUserBankCard(UserBankCardModel card, String otp) async {
+    if (isAddingBankCard.value) return;
+
     try {
+      isAddingBankCard.value = true;
       isLoading.value = true;
+
+      // Close bottom sheet if open so background list shows loading shimmer immediately
+      if (Get.isBottomSheetOpen == true) {
+        Get.back();
+      }
+
       final payload = {
         "method": card.methodName,
         "accountNo": card.accountNumber,
@@ -183,7 +230,6 @@ class WalletController extends GetxController {
       await fetchWithdrawalMethods();
       addAccountOtpController.clear();
       
-      Get.back(); // close modal
       Get.snackbar(
         'Account Added',
         'Withdrawal account has been saved successfully.',
@@ -196,6 +242,7 @@ class WalletController extends GetxController {
       Get.snackbar('Error', e.toString().replaceAll('Exception: ', ''), backgroundColor: Colors.redAccent, colorText: Colors.white);
     } finally {
       isLoading.value = false;
+      isAddingBankCard.value = false;
     }
   }
 
@@ -484,9 +531,12 @@ class WalletController extends GetxController {
       // Re-fetch profile from API to synchronize
       await profileCtrl.fetchCustomerProfile();
 
-      final feeA = amount * (commissionRateA / 100);
-      final feeB = amount * (commissionRateB / 100);
-      final feeC = amount * (commissionRateC / 100);
+      final rateA = commissionRateA.value;
+      final rateB = commissionRateB.value;
+      final rateC = commissionRateC.value;
+      final feeA = amount * (rateA / 100);
+      final feeB = amount * (rateB / 100);
+      final feeC = amount * (rateC / 100);
       final totalFee = feeA + feeB + feeC;
       final finalReceivedAmount = amount - totalFee;
 
@@ -516,7 +566,7 @@ class WalletController extends GetxController {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Your request to withdraw ৳${amount.toStringAsFixed(0)} to ${selectedCard.methodName} (${selectedCard.accountNumber}) has been submitted.\n\n• Level A Fee (10%): ৳${feeA.toStringAsFixed(0)}\n• Level B Fee (5%): ৳${feeB.toStringAsFixed(0)}\n• Level C Fee (2%): ৳${feeC.toStringAsFixed(0)}\n• Total Commission Deducted: ৳${totalFee.toStringAsFixed(0)}\n• Net Final Received: ৳${finalReceivedAmount.toStringAsFixed(0)}\n\nStatus: Pending Admin Approval (within 24 hrs).',
+                  'Your request to withdraw ৳${amount.toStringAsFixed(0)} to ${selectedCard.methodName} (${selectedCard.accountNumber}) has been submitted.\n\n• Level A Fee (${formatRate(rateA)}): ৳${feeA.toStringAsFixed(0)}\n• Level B Fee (${formatRate(rateB)}): ৳${feeB.toStringAsFixed(0)}\n• Level C Fee (${formatRate(rateC)}): ৳${feeC.toStringAsFixed(0)}\n• Total Commission Deducted (${formatRate(totalDeductionPercent)}): ৳${totalFee.toStringAsFixed(0)}\n• Net Final Received: ৳${finalReceivedAmount.toStringAsFixed(0)}\n\nStatus: Pending Admin Approval (within 24 hrs).',
                   textAlign: TextAlign.left,
                   style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.45),
                 ),

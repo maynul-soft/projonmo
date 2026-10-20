@@ -173,13 +173,15 @@ class ProfileView extends GetView<ProfileController> {
                     border: Border.all(color: Colors.white54, width: 1.5),
                     boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 4),
+                      const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 18),
+                      const SizedBox(width: 4),
                       Text(
-                        'VIP 1',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        user?.vipLevelText.isNotEmpty == true
+                            ? user!.vipLevelText
+                            : 'Level ${user?.vipLevel ?? 0}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ],
                   ),
