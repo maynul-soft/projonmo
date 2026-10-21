@@ -91,6 +91,18 @@ class WithdrawOtpView extends GetView<WalletController> {
                         : const Text('Verify & Withdraw', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   );
                 }),
+                const SizedBox(height: 14),
+                Obx(() {
+                  return TextButton(
+                    onPressed: controller.isResendingOtp.value ? null : () => controller.resendWithdrawOtp(),
+                    child: controller.isResendingOtp.value
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)))
+                        : const Text(
+                            "Didn't receive code? Resend OTP",
+                            style: TextStyle(fontSize: 13, color: Color(0xFF0D9488), fontWeight: FontWeight.w600),
+                          ),
+                  );
+                }),
               ],
             ),
           ),

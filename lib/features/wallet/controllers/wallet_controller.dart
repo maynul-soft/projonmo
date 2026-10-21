@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/network/network.dart';
@@ -5,6 +6,8 @@ import '../../../routes/app_routes.dart';
 import '../../profile/controllers/profile_controller.dart';
 import '../models/payment_method_model.dart';
 import '../models/user_bank_card_model.dart';
+import '../models/withdrawal_preview_model.dart';
+import '../models/withdrawal_record_model.dart';
 
 class WalletController extends GetxController {
   // Admin created deposit payment gateways
@@ -67,6 +70,17 @@ class WalletController extends GetxController {
   final commissionRateC = 1.0.obs;
   final isCommissionSettingsLoaded = false.obs;
 
+  // Withdrawal Preview
+  final withdrawalPreview = Rxn<WithdrawalPreviewModel>();
+  final isPreviewLoading = false.obs;
+  final previewError = RxnString();
+  Timer? _withdrawDebounce;
+  double? _lastPreviewAmount;
+
+  // Withdrawal History
+  final withdrawalHistory = <WithdrawalRecordModel>[].obs;
+  final isHistoryLoading = false.obs;
+
   double get totalDeductionPercent =>
       commissionRateA.value + commissionRateB.value + commissionRateC.value;
 
@@ -80,7 +94,74 @@ class WalletController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    withdrawAmountController.addListener(_onWithdrawAmountChanged);
     _initData();
+  }
+
+  @override
+  void onClose() {
+    _withdrawDebounce?.cancel();
+    withdrawAmountController.removeListener(_onWithdrawAmountChanged);
+    super.onClose();
+  }
+
+  void _onWithdrawAmountChanged() {
+    if (_withdrawDebounce?.isActive ?? false) {
+      _withdrawDebounce!.cancel();
+    }
+    final text = withdrawAmountController.text.trim();
+    if (text.isEmpty) {
+      withdrawalPreview.value = null;
+      previewError.value = null;
+      return;
+    }
+
+    final amount = double.tryParse(text);
+    if (amount == null || amount <= 0) {
+      withdrawalPreview.value = null;
+      previewError.value = null;
+      return;
+    }
+
+    _withdrawDebounce = Timer(const Duration(milliseconds: 400), () {
+      fetchWithdrawalPreview(amount);
+    });
+  }
+
+  Future<void> fetchWithdrawalPreview(double amount) async {
+    _lastPreviewAmount = amount;
+    try {
+      isPreviewLoading.value = true;
+      previewError.value = null;
+
+      final response = await ApiClient.instance.get(
+        ApiEndpoints.customerWithdrawalPreview,
+        queryParameters: {'amount': amount},
+      );
+
+      if (_lastPreviewAmount != amount) return;
+
+      if (response.data != null && response.data is Map) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        if (resMap['success'] == true && resMap['data'] != null) {
+          withdrawalPreview.value = WithdrawalPreviewModel.fromJson(
+            Map<String, dynamic>.from(resMap['data'] as Map),
+          );
+        } else {
+          withdrawalPreview.value = null;
+          previewError.value = resMap['message']?.toString() ?? 'Failed to preview fees';
+        }
+      }
+    } catch (e) {
+      if (_lastPreviewAmount != amount) return;
+      debugPrint('[WalletController] Error previewing withdrawal: $e');
+      withdrawalPreview.value = null;
+      previewError.value = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
+    } finally {
+      if (_lastPreviewAmount == amount) {
+        isPreviewLoading.value = false;
+      }
+    }
   }
 
   @override
@@ -95,8 +176,36 @@ class WalletController extends GetxController {
       fetchPaymentMethods(),
       fetchWithdrawalMethods(),
       fetchCommissionSettings(),
+      fetchWithdrawalHistory(),
     ]);
     isLoading.value = false;
+  }
+
+  Future<void> fetchWithdrawalHistory() async {
+    try {
+      isHistoryLoading.value = true;
+      final response = await ApiClient.instance.get(ApiEndpoints.customerWithdrawals);
+      if (response.data != null && response.data is Map) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        if (resMap['success'] == true && resMap['data'] != null) {
+          final listRaw = resMap['data'];
+          if (listRaw is List) {
+            final fetched = listRaw.map((item) {
+              if (item is Map) {
+                return WithdrawalRecordModel.fromJson(Map<String, dynamic>.from(item));
+              }
+              return null;
+            }).whereType<WithdrawalRecordModel>().toList();
+
+            withdrawalHistory.assignAll(fetched);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[WalletController] Error fetching withdrawal history: $e');
+    } finally {
+      isHistoryLoading.value = false;
+    }
   }
 
   Future<void> fetchCommissionSettings() async {
@@ -482,7 +591,20 @@ class WalletController extends GetxController {
 
     try {
       isSubmittingWithdraw.value = true;
-      await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
+      try {
+        await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
+      } catch (e) {
+        debugPrint('[WalletController] Warning: send-otp error: $e');
+        final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
+        Get.snackbar(
+          'SMS Gateway Notice',
+          '$msg. If testing in development, you can use dev OTP (123456).',
+          backgroundColor: Colors.orange.shade800,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
+
       Get.toNamed(AppRoutes.withdrawOtp, arguments: {
         'amount': amount,
         'selectedCard': selectedCard,
@@ -491,6 +613,20 @@ class WalletController extends GetxController {
       Get.snackbar('Error', e.toString().replaceAll('Exception: ', ''), backgroundColor: Colors.redAccent, colorText: Colors.white);
     } finally {
       isSubmittingWithdraw.value = false;
+    }
+  }
+
+  final isResendingOtp = false.obs;
+  Future<void> resendWithdrawOtp() async {
+    try {
+      isResendingOtp.value = true;
+      await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
+      Get.snackbar('OTP Sent', 'A new OTP code has been requested.', backgroundColor: Colors.white);
+    } catch (e) {
+      final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
+      Get.snackbar('Notice', msg, backgroundColor: Colors.orange.shade800, colorText: Colors.white);
+    } finally {
+      isResendingOtp.value = false;
     }
   }
 
@@ -528,20 +664,27 @@ class WalletController extends GetxController {
         totalWithdrawals: cur.totalWithdrawals + amount,
       ));
 
-      // Re-fetch profile from API to synchronize
-      await profileCtrl.fetchCustomerProfile();
+      // Re-fetch profile and withdrawal history from API to synchronize
+      await Future.wait([
+        profileCtrl.fetchCustomerProfile(),
+        fetchWithdrawalHistory(),
+      ]);
 
-      final rateA = commissionRateA.value;
-      final rateB = commissionRateB.value;
-      final rateC = commissionRateC.value;
-      final feeA = amount * (rateA / 100);
-      final feeB = amount * (rateB / 100);
-      final feeC = amount * (rateC / 100);
-      final totalFee = feeA + feeB + feeC;
-      final finalReceivedAmount = amount - totalFee;
+      final preview = withdrawalPreview.value;
+      final rateA = preview?.levelA?.rate ?? commissionRateA.value;
+      final rateB = preview?.levelB?.rate ?? commissionRateB.value;
+      final rateC = preview?.levelC?.rate ?? commissionRateC.value;
+      final feeA = preview?.levelA?.fee ?? (amount * (rateA / 100));
+      final feeB = preview?.levelB?.fee ?? (amount * (rateB / 100));
+      final feeC = preview?.levelC?.fee ?? (amount * (rateC / 100));
+      final totalRate = preview?.totalFeeRate ?? totalDeductionPercent;
+      final totalFee = preview?.totalFeeAmount ?? (feeA + feeB + feeC);
+      final finalReceivedAmount = preview?.netAmount ?? (amount - totalFee);
 
       withdrawAmountController.clear();
+      withdrawOtpController.clear();
       withdrawPasswordController.clear();
+      withdrawalPreview.value = null;
 
       Get.dialog(
         Dialog(
@@ -566,7 +709,7 @@ class WalletController extends GetxController {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Your request to withdraw ৳${amount.toStringAsFixed(0)} to ${selectedCard.methodName} (${selectedCard.accountNumber}) has been submitted.\n\n• Level A Fee (${formatRate(rateA)}): ৳${feeA.toStringAsFixed(0)}\n• Level B Fee (${formatRate(rateB)}): ৳${feeB.toStringAsFixed(0)}\n• Level C Fee (${formatRate(rateC)}): ৳${feeC.toStringAsFixed(0)}\n• Total Commission Deducted (${formatRate(totalDeductionPercent)}): ৳${totalFee.toStringAsFixed(0)}\n• Net Final Received: ৳${finalReceivedAmount.toStringAsFixed(0)}\n\nStatus: Pending Admin Approval (within 24 hrs).',
+                  'Your request to withdraw ৳${amount.toStringAsFixed(0)} to ${selectedCard.methodName} (${selectedCard.accountNumber}) has been submitted.\n\n• Level A Fee (${formatRate(rateA)}): ৳${feeA.toStringAsFixed(0)}\n• Level B Fee (${formatRate(rateB)}): ৳${feeB.toStringAsFixed(0)}\n• Level C Fee (${formatRate(rateC)}): ৳${feeC.toStringAsFixed(0)}\n• Total Fee Deducted (${formatRate(totalRate)}): ৳${totalFee.toStringAsFixed(0)}\n• Net Final Received: ৳${finalReceivedAmount.toStringAsFixed(0)}\n\nStatus: Pending Admin Approval (within 24 hrs).',
                   textAlign: TextAlign.left,
                   style: const TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.45),
                 ),

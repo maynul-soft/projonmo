@@ -97,6 +97,7 @@ class ApiEndpoints {
   static String customerDeleteWithdrawalMethod(String id) => '/customer/withdrawal-methods/$id';
   static const String customerWithdrawals = '/customer/withdrawals';
   static const String customerWithdrawalSendOtp = '/customer/withdrawals/send-otp';
+  static const String customerWithdrawalPreview = '/customer/withdrawals/preview';
 
   // Team & Income
   static const String customerTeam = '/customer/team';
