@@ -93,13 +93,23 @@ class WithdrawOtpView extends GetView<WalletController> {
                 }),
                 const SizedBox(height: 14),
                 Obx(() {
+                  final countdown = controller.withdrawOtpCountdown.value;
+                  final isCooldown = countdown > 0;
+                  final isResending = controller.isResendingOtp.value;
+
                   return TextButton(
-                    onPressed: controller.isResendingOtp.value ? null : () => controller.resendWithdrawOtp(),
-                    child: controller.isResendingOtp.value
+                    onPressed: (isResending || isCooldown) ? null : () => controller.resendWithdrawOtp(),
+                    child: isResending
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D9488)))
-                        : const Text(
-                            "Didn't receive code? Resend OTP",
-                            style: TextStyle(fontSize: 13, color: Color(0xFF0D9488), fontWeight: FontWeight.w600),
+                        : Text(
+                            isCooldown
+                                ? "Resend code in ${countdown}s"
+                                : "Didn't receive code? Resend OTP",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isCooldown ? AppColors.textMuted : const Color(0xFF0D9488),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   );
                 }),

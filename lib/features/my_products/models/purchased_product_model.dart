@@ -248,6 +248,20 @@ class PurchasedProductModel {
       totalEarn = dailyInc * vDays;
     }
 
+    final pDate = _parseDateTime(
+          json['purchasedAt'] ?? json['purchase_date'] ?? json['purchased_at'] ?? json['purchaseDate'],
+        ) ??
+        DateTime.now();
+
+    // API থেকে daysPassed না আসলে হিসাব করে বের করা হবে
+    int calculatedDaysPassed = _parseInt(json['daysPassed'] ?? json['days_passed'], -1);
+    if (calculatedDaysPassed == -1) {
+      calculatedDaysPassed = DateTime.now().difference(pDate).inDays;
+      // daysPassed যেন 0 এর নিচে না যায় এবং validityDays এর বেশি না হয়
+      if (calculatedDaysPassed < 0) calculatedDaysPassed = 0;
+      if (calculatedDaysPassed > vDays) calculatedDaysPassed = vDays;
+    }
+
     return PurchasedProductModel(
       id: prodId,
       productCode: json['productCode']?.toString() ?? json['product_code']?.toString() ?? json['productId']?.toString() ?? 'A1',
@@ -256,13 +270,10 @@ class PurchasedProductModel {
       price: _parseDouble(json['pricePaid'] ?? json['price']),
       dailyIncome: dailyInc,
       validityDays: vDays,
-      daysPassed: _parseInt(json['daysPassed'] ?? json['days_passed'], 0),
+      daysPassed: calculatedDaysPassed,
       totalEarnings: totalEarn,
       alreadyReceived: _parseDouble(json['alreadyReceived'] ?? json['already_received']),
-      purchaseDate: _parseDateTime(
-            json['purchasedAt'] ?? json['purchase_date'] ?? json['purchased_at'] ?? json['purchaseDate'],
-          ) ??
-          DateTime.now(),
+      purchaseDate: pDate,
       lastClaimedAt: lastClaim,
       isClaimed: claimed,
       status: statusStr,

@@ -20,6 +20,19 @@ class ProductController extends GetxController {
 
   final products = <ProductModel>[].obs;
 
+  // Dynamic commission rates (matching Calculator settings from /public/calculator-settings)
+  final level1Rate = 7.0.obs;
+  final level2Rate = 3.0.obs;
+  final level3Rate = 1.0.obs;
+  final isCommissionSettingsLoaded = false.obs;
+
+  String formatRate(double rate) {
+    if (rate == rate.toInt()) {
+      return '${rate.toInt()}%';
+    }
+    return '${rate.toStringAsFixed(1)}%';
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -31,7 +44,30 @@ class ProductController extends GetxController {
     await Future.wait([
       fetchCategories(),
       fetchProducts(),
+      fetchCommissionSettings(),
     ]);
+  }
+
+  /// Fetch dynamic commission rates from API (GET /public/calculator-settings)
+  Future<void> fetchCommissionSettings() async {
+    try {
+      final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
+      if (response.data != null && (response.data['success'] == true || response.data is Map)) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        final data = resMap['data'] != null && resMap['data'] is Map
+            ? Map<String, dynamic>.from(resMap['data'] as Map)
+            : resMap;
+        final stage1 = (data['level1'] ?? data['A'] ?? data['teamStages']?['A'] as num?)?.toDouble();
+        final stage2 = (data['level2'] ?? data['B'] ?? data['teamStages']?['B'] as num?)?.toDouble();
+        final stage3 = (data['level3'] ?? data['C'] ?? data['teamStages']?['C'] as num?)?.toDouble();
+        if (stage1 != null) level1Rate.value = stage1;
+        if (stage2 != null) level2Rate.value = stage2;
+        if (stage3 != null) level3Rate.value = stage3;
+        isCommissionSettingsLoaded.value = true;
+      }
+    } catch (e) {
+      debugPrint('[ProductController] Error fetching commission settings: $e');
+    }
   }
 
   /// Fetch public categories from API (GET /public/categories)

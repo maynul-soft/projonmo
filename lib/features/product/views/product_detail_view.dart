@@ -30,6 +30,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
   Future<void> _loadProductDetail() async {
     final controller = Get.find<ProductController>();
+    if (!controller.isCommissionSettingsLoaded.value) {
+      controller.fetchCommissionSettings();
+    }
     final args = Get.arguments;
 
     String? id;
@@ -114,10 +117,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       );
     }
 
-    // Calculate commissions for display
-    final commB = product.dailyIncome * 0.1 * product.validityDays;
-    final commC = product.dailyIncome * 0.05 * product.validityDays;
-    final commD = product.dailyIncome * 0.02 * product.validityDays;
+    final controller = Get.find<ProductController>();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -280,27 +280,45 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             const SizedBox(height: 14),
 
             // Team Commission Calculation Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '[ Team Commission ]',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildCommissionFormula('B-10%:', '${product.dailyIncome} * 0.1 * ${product.validityDays} = ${CurrencyFormatter.format(commB)}'),
-                  _buildCommissionFormula('C-5%:', '${product.dailyIncome} * 0.05 * ${product.validityDays} = ${CurrencyFormatter.format(commC)}'),
-                  _buildCommissionFormula('D-2%:', '${product.dailyIncome} * 0.02 * ${product.validityDays} = ${CurrencyFormatter.format(commD)}'),
-                ],
-              ),
-            ),
+            Obx(() {
+              final rate1 = controller.level1Rate.value;
+              final rate2 = controller.level2Rate.value;
+              final rate3 = controller.level3Rate.value;
+
+              final commB = product.dailyIncome * (rate1 / 100) * product.validityDays;
+              final commC = product.dailyIncome * (rate2 / 100) * product.validityDays;
+              final commD = product.dailyIncome * (rate3 / 100) * product.validityDays;
+
+              final rate1Str = controller.formatRate(rate1);
+              final rate2Str = controller.formatRate(rate2);
+              final rate3Str = controller.formatRate(rate3);
+
+              final mult1 = _formatMultiplier(rate1);
+              final mult2 = _formatMultiplier(rate2);
+              final mult3 = _formatMultiplier(rate3);
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '[ Team Commission ]',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCommissionFormula('A-$rate1Str:', '${product.dailyIncome} * $mult1 * ${product.validityDays} = ${CurrencyFormatter.format(commB)}'),
+                    _buildCommissionFormula('B-$rate2Str:', '${product.dailyIncome} * $mult2 * ${product.validityDays} = ${CurrencyFormatter.format(commC)}'),
+                    _buildCommissionFormula('C-$rate3Str:', '${product.dailyIncome} * $mult3 * ${product.validityDays} = ${CurrencyFormatter.format(commD)}'),
+                  ],
+                ),
+              );
+            }),
             const SizedBox(height: 24),
           ],
         ),
@@ -393,5 +411,18 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         ],
       ),
     );
+  }
+
+  String _formatMultiplier(double rate) {
+    final dec = rate / 100.0;
+    String str = dec.toStringAsFixed(4);
+    while (str.contains('.') && (str.endsWith('0') || str.endsWith('.'))) {
+      if (str.endsWith('.')) {
+        str = str.substring(0, str.length - 1);
+        break;
+      }
+      str = str.substring(0, str.length - 1);
+    }
+    return str;
   }
 }

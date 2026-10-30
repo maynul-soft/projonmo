@@ -81,6 +81,11 @@ class WalletController extends GetxController {
   final withdrawalHistory = <WithdrawalRecordModel>[].obs;
   final isHistoryLoading = false.obs;
 
+  // Withdrawal OTP Cooldown & Double Submission Guard
+  final withdrawOtpCountdown = 0.obs;
+  Timer? _withdrawOtpTimer;
+  DateTime? _lastWithdrawSubmitTime;
+
   double get totalDeductionPercent =>
       commissionRateA.value + commissionRateB.value + commissionRateC.value;
 
@@ -101,6 +106,7 @@ class WalletController extends GetxController {
   @override
   void onClose() {
     _withdrawDebounce?.cancel();
+    _withdrawOtpTimer?.cancel();
     withdrawAmountController.removeListener(_onWithdrawAmountChanged);
     super.onClose();
   }
@@ -549,9 +555,29 @@ class WalletController extends GetxController {
     }
   }
 
+  void _startWithdrawOtpCooldown([int seconds = 60]) {
+    withdrawOtpCountdown.value = seconds;
+    _withdrawOtpTimer?.cancel();
+    _withdrawOtpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (withdrawOtpCountdown.value > 0) {
+        withdrawOtpCountdown.value--;
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   /// Submit Withdraw
   Future<void> submitWithdraw() async {
+    // 1. Strict double-click & in-flight request guard
     if (isSubmittingWithdraw.value) return;
+
+    final now = DateTime.now();
+    if (_lastWithdrawSubmitTime != null &&
+        now.difference(_lastWithdrawSubmitTime!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastWithdrawSubmitTime = now;
 
     final selectedCard = selectedWithdrawCard.value;
     if (selectedCard == null) {
@@ -591,26 +617,46 @@ class WalletController extends GetxController {
 
     try {
       isSubmittingWithdraw.value = true;
-      try {
-        await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
-      } catch (e) {
-        debugPrint('[WalletController] Warning: send-otp error: $e');
-        final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
-        Get.snackbar(
-          'SMS Gateway Notice',
-          '$msg. If testing in development, you can use dev OTP (123456).',
-          backgroundColor: Colors.orange.shade800,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-      }
+      Get.closeAllSnackbars();
 
+      // Request OTP from server
+      await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
+
+      // Start 60-second cooldown timer for resending OTP
+      _startWithdrawOtpCooldown(60);
+
+      // Only navigate to OTP verification view when OTP was successfully sent
       Get.toNamed(AppRoutes.withdrawOtp, arguments: {
         'amount': amount,
         'selectedCard': selectedCard,
       });
+    } on ApiException catch (e) {
+      debugPrint('[WalletController] send-otp ApiException: ${e.message}');
+      Get.snackbar(
+        'OTP Request Failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
     } catch (e) {
-      Get.snackbar('Error', e.toString().replaceAll('Exception: ', ''), backgroundColor: Colors.redAccent, colorText: Colors.white);
+      debugPrint('[WalletController] send-otp Error: $e');
+      final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
+      Get.snackbar(
+        'OTP Request Failed',
+        msg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
     } finally {
       isSubmittingWithdraw.value = false;
     }
@@ -618,13 +664,51 @@ class WalletController extends GetxController {
 
   final isResendingOtp = false.obs;
   Future<void> resendWithdrawOtp() async {
+    if (isResendingOtp.value || withdrawOtpCountdown.value > 0) return;
+
     try {
       isResendingOtp.value = true;
+      Get.closeAllSnackbars();
+
       await ApiClient.instance.post(ApiEndpoints.customerWithdrawalSendOtp);
-      Get.snackbar('OTP Sent', 'A new OTP code has been requested.', backgroundColor: Colors.white);
+      _startWithdrawOtpCooldown(60);
+
+      Get.snackbar(
+        'OTP Sent',
+        'A new verification code has been sent to your mobile.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
+    } on ApiException catch (e) {
+      Get.snackbar(
+        'Failed to Resend OTP',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '').replaceAll('ApiException: ', '');
-      Get.snackbar('Notice', msg, backgroundColor: Colors.orange.shade800, colorText: Colors.white);
+      Get.snackbar(
+        'Failed to Resend OTP',
+        msg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFEF4444),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+        duration: const Duration(seconds: 4),
+      );
     } finally {
       isResendingOtp.value = false;
     }

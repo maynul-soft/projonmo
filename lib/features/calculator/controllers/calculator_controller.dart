@@ -67,11 +67,17 @@ class CalculatorController extends GetxController {
     // Fetch dynamic rates
     try {
       final response = await ApiClient.instance.get(ApiEndpoints.publicCalculatorSettings);
-      if (response.data != null && response.data['success'] == true) {
-        final data = response.data['data'] ?? {};
-        level1Rate.value = (data['level1'] as num?)?.toDouble() ?? 7.0;
-        level2Rate.value = (data['level2'] as num?)?.toDouble() ?? 3.0;
-        level3Rate.value = (data['level3'] as num?)?.toDouble() ?? 1.0;
+      if (response.data != null && (response.data['success'] == true || response.data is Map)) {
+        final resMap = Map<String, dynamic>.from(response.data as Map);
+        final data = resMap['data'] != null && resMap['data'] is Map
+            ? Map<String, dynamic>.from(resMap['data'] as Map)
+            : resMap;
+        final stage1 = (data['level1'] ?? data['A'] ?? data['teamStages']?['A'] as num?)?.toDouble();
+        final stage2 = (data['level2'] ?? data['B'] ?? data['teamStages']?['B'] as num?)?.toDouble();
+        final stage3 = (data['level3'] ?? data['C'] ?? data['teamStages']?['C'] as num?)?.toDouble();
+        if (stage1 != null) level1Rate.value = stage1;
+        if (stage2 != null) level2Rate.value = stage2;
+        if (stage3 != null) level3Rate.value = stage3;
       }
     } catch (e) {
       debugPrint('[CalculatorController] Error fetching settings: $e');

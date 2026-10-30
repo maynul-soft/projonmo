@@ -69,11 +69,11 @@ class CalculatorView extends GetView<CalculatorController> {
                   // B, C, D Team Inputs
                   Row(
                     children: [
-                      _buildTeamInput('Level 1', controller.l1Controller),
+                      _buildTeamInput('Level A', controller.l1Controller),
                       const SizedBox(width: 10),
-                      _buildTeamInput('Level 2', controller.l2Controller),
+                      _buildTeamInput('Level B', controller.l2Controller),
                       const SizedBox(width: 10),
-                      _buildTeamInput('Level 3', controller.l3Controller),
+                      _buildTeamInput('Level C', controller.l3Controller),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -183,17 +183,17 @@ class CalculatorView extends GetView<CalculatorController> {
 
                     // Level 1, 2, 3 formula rows
                     _buildFormulaLine(
-                      'Level 1',
+                      'Level A',
                       '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level1Rate.value)} * ${res.countL1}',
                       CurrencyFormatter.format(res.level1Earnings),
                     ),
                     _buildFormulaLine(
-                      'Level 2',
+                      'Level B',
                       '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level2Rate.value)} * ${res.countL2}',
                       CurrencyFormatter.format(res.level2Earnings),
                     ),
                     _buildFormulaLine(
-                      'Level 3',
+                      'Level C',
                       '${CurrencyFormatter.format(res.productDailyIncome, showSymbol: false)} * ${controller.formatRate(controller.level3Rate.value)} * ${res.countL3}',
                       CurrencyFormatter.format(res.level3Earnings),
                     ),

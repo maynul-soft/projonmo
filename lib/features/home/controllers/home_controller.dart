@@ -257,7 +257,7 @@ class HomeController extends GetxController {
             marqueeNotice.value = dataMap['text']?.toString() ??
                 dataMap['marquee']?.toString() ??
                 dataMap['announcement']?.toString() ??
-                AppStrings.defaultMarquee;
+                "";
           } else {
             marqueeNotice.value = ''; // hide or default if disabled
           }

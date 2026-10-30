@@ -14,12 +14,13 @@ class TeamMemberModel {
   });
 
   factory TeamMemberModel.fromJson(Map<String, dynamic> json, {bool isValid = true, String level = 'A'}) {
+    final stage = (json['stage']?.toString() ?? level).toUpperCase();
     return TeamMemberModel(
-      account: json['mobile']?.toString() ?? json['userId']?.toString() ?? '',
+      account: json['mobile']?.toString() ?? json['userId']?.toString() ?? json['id']?.toString() ?? '',
       maxProduct: json['maxProductName']?.toString() ?? '—',
       contact: 'Telegram', // Placeholder since API does not provide it
       isValid: isValid,
-      level: level,
+      level: stage.isNotEmpty ? stage : 'A',
     );
   }
 

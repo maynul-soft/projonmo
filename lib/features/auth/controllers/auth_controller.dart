@@ -82,7 +82,7 @@ class AuthController extends GetxController {
     }
 
     // 3. Fallback to default
-    code ??= 'ADMIN001';
+    code ??= 'REF866036';
 
     inviteCodeController.text = code;
     isInviteCodeLocked.value = true;

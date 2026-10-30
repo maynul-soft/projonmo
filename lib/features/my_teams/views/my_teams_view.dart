@@ -350,16 +350,20 @@ class MyTeamsView extends GetView<TeamController> {
   Widget _buildLevelTabs(BuildContext context) {
     return Obx(() {
       final s = controller.teamStats.value;
+      final sumCount = s.countA + s.countB + s.countC;
+      final totalCount = sumCount > 0 ? sumCount : controller.teamMembers.length;
       final rateAStr = controller.formatRate(controller.rateA.value);
       final rateBStr = controller.formatRate(controller.rateB.value);
       final rateCStr = controller.formatRate(controller.rateC.value);
 
       return Row(
         children: [
+          _buildPillTab('All ($totalCount)', 'ALL'),
+          const SizedBox(width: 6),
           _buildPillTab('A-$rateAStr (${s.countA})', 'A'),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildPillTab('B-$rateBStr (${s.countB})', 'B'),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildPillTab('C-$rateCStr (${s.countC})', 'C'),
         ],
       );
@@ -494,11 +498,40 @@ class MyTeamsView extends GetView<TeamController> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          m.account,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: m.level == 'A'
+                                    ? AppColors.primary.withValues(alpha: 0.12)
+                                    : (m.level == 'B'
+                                        ? Colors.orange.withValues(alpha: 0.15)
+                                        : Colors.purple.withValues(alpha: 0.15)),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                m.level,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: m.level == 'A'
+                                      ? AppColors.primary
+                                      : (m.level == 'B' ? Colors.orange.shade800 : Colors.purple.shade800),
+                                ),
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                m.account,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Expanded(

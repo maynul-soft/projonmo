@@ -5,7 +5,7 @@ import '../models/team_stats_model.dart';
 
 class TeamController extends GetxController {
   final teamStats = Rx<TeamStatsModel>(TeamStatsModel());
-  final selectedLevelTab = 'A'.obs; // 'A', 'B', 'C'
+  final selectedLevelTab = 'ALL'.obs; // 'ALL', 'A', 'B', 'C'
   final selectedMemberType = 'valid'.obs; // 'valid', 'invalid'
   final isLoading = true.obs;
 
@@ -115,6 +115,26 @@ class TeamController extends GetxController {
             parseLevel(level, invalidMap, false);
           }
 
+          // Also merge data['members'] to ensure no members are missed
+          if (data['members'] is List) {
+            final rawMembers = data['members'] as List;
+            final existingAccounts = allMembers.map((m) => m.account).toSet();
+            for (final item in rawMembers) {
+              if (item is Map) {
+                final acc = item['mobile']?.toString() ?? item['id']?.toString() ?? '';
+                if (acc.isNotEmpty && !existingAccounts.contains(acc)) {
+                  final stage = (item['stage']?.toString() ?? 'A').toUpperCase();
+                  allMembers.add(TeamMemberModel.fromJson(
+                    Map<String, dynamic>.from(item),
+                    isValid: true,
+                    level: stage,
+                  ));
+                  existingAccounts.add(acc);
+                }
+              }
+            }
+          }
+
           teamMembers.assignAll(allMembers);
         } else if (resMap['success'] == true && resMap['data'] == null) {
           teamMembers.clear();
@@ -129,7 +149,7 @@ class TeamController extends GetxController {
 
   List<TeamMemberModel> get filteredMembers {
     return teamMembers.where((m) {
-      final matchesLevel = m.level == selectedLevelTab.value;
+      final matchesLevel = selectedLevelTab.value == 'ALL' || m.level == selectedLevelTab.value;
       final matchesValidity = selectedMemberType.value == 'valid' ? m.isValid : !m.isValid;
       return matchesLevel && matchesValidity;
     }).toList();

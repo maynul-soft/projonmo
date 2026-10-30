@@ -170,36 +170,7 @@ class LoginView extends GetView<AuthController> {
                             ),
                           ),
                         )),
-                        const SizedBox(height: 16),
-
-
-
-                        // Forgot Password Link
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Get.snackbar(
-                                'Support',
-                                'Please contact customer support to reset your password.',
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              AppStrings.forgotPassword,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
 
                         // Submit Button
                         Obx(() {

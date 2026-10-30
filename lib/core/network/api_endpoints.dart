@@ -9,13 +9,16 @@ class ApiEndpoints {
   // ===========================================================================
   /// Local backend base URL as documented in CUSTOMER_API.md & API_GUIDE.md
   static const String localBaseUrl = 'http://localhost:8001/api/v1';
+  // static const String localBaseUrl = 'https://api.projonmo.tech/api/v1';
 
   /// Android Emulator local backend base URL
-  // static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8001/api/v1';
   static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8001/api/v1';
+  // static const String androidEmulatorBaseUrl = 'http://10.0.2.2:8001/api/v1';
+  // static const String androidEmulatorBaseUrl = 'https://api.projonmo.tech/api/v1';
 
   /// Production backend base URL
   static const String productionBaseUrl = 'https://api.projonmo.tech/api/v1';
+  // static const String productionBaseUrl = 'http://localhost:8001/api/v1';
 
   /// Active default base URL
   /// Automatically uses Production (`https://api.tecqora.com/api/v1`) in Release builds (`flutter build apk`).
@@ -25,13 +28,6 @@ class ApiEndpoints {
     const envBaseUrl = String.fromEnvironment('BASE_URL');
     if (envBaseUrl.isNotEmpty) return envBaseUrl;
 
-    if (kIsWeb && kDebugMode) return localBaseUrl;
-    if (kDebugMode) {
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        return androidEmulatorBaseUrl;
-      }
-      return localBaseUrl;
-    }
     return productionBaseUrl;
   }
 
